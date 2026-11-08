@@ -1,0 +1,3 @@
+Disegni aggiuntivi di animali e oggetti: OpenMoji – the open-source emoji and icon project (https://openmoji.org).
+Licenza: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0), testo completo in OpenMoji-CC-BY-SA-4.0.txt.
+I disegni sono stati inclusi così come sono (solo compattati) e vengono ridimensionati e animati dall'app.

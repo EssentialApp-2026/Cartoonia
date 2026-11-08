@@ -1,0 +1,49 @@
+COME INSTALLARE CARTOONIA SUL TELEFONO E SUL PC
+===============================================
+Per USARLA basta aprire index.html (anche direttamente dal telefono, con Chrome: «Apri con» → Chrome).
+La prima volta la voce di Paola si prepara in sottofondo: sotto «Crea il cartone» vedi a che punto è.
+Se compare la schermata «L'app non è partita», il file è stato aperto con un programma che
+non esegue le app: tieni premuto su index.html → «Apri con» → Chrome.
+Controlla in alto, accanto al nome, che ci sia la versione giusta (es. «v2.13»).
+Per INSTALLARLA come app, invece, i browser vogliono che la apri dal suo indirizzo
+internet sicuro (https://): dal file aperto sul telefono o sul PC non si può installare.
+Il modo più semplice è GitHub Pages, come per le altre app EssentialApp: si fa una volta sola.
+
+1) METTI CARTOONIA SU INTERNET (GitHub Pages, gratis, circa 5 minuti)
+   a. Vai su github.com con l'account EssentialApp-2026.
+      Premi «New» (nuovo repository) → nome: Cartoonia → Public → «Create repository».
+   b. Nella pagina del repository premi «uploading an existing file»
+      (oppure «Add file» → «Upload files») e trascina TUTTI i file di questa cartella:
+      index.html, sw.js, manifest.webmanifest, le 3 icone e i 2 screenshot
+      e la cartella «ia» (serve al regista IA; la cartella «licenze» puoi caricarla anche lei). Premi «Commit changes».
+      index.html è sotto i 25 MB, quindi il caricamento dal sito funziona anche dal telefono.
+   c. Vai in «Settings» → «Pages» → «Branch»: main, cartella «/ (root)» → «Save».
+      Dopo 1-2 minuti l'app è online all'indirizzo:
+         https://essentialapp-2026.github.io/Cartoonia/
+
+2) INSTALLA SUL TELEFONO
+   Android (Chrome):
+   - Apri https://essentialapp-2026.github.io/Cartoonia/ con Chrome.
+   - La prima volta scarica circa 25 MB: aspetta che sotto «Crea il cartone»
+     compaia «Voce: Paola, naturale femminile ✓».
+   - Tocca il pulsante arancione «Installa» in alto
+     (oppure il menu ⋮ → «Installa app» / «Aggiungi a schermata Home»).
+   - L'icona di Cartoonia compare tra le app e funziona anche senza internet.
+   iPhone (Safari): Condividi (quadrato con la freccia) → «Aggiungi alla schermata Home».
+
+3) INSTALLA SUL PC (Windows con Chrome o Edge)
+   - Apri lo stesso indirizzo con Chrome o Edge.
+   - Clicca il pulsante arancione «Installa» in alto nell'app
+     (oppure l'icona con lo schermo e la freccia a destra nella barra degli indirizzi;
+     in Edge: menu … → «App» → «Installa questo sito come app»).
+   - Cartoonia si apre nella sua finestra; la trovi nel menu Start e puoi fissarla
+     sulla barra delle applicazioni. Funziona anche senza internet.
+
+AGGIORNAMENTI
+   Quando carichi una versione nuova nello stesso repository (sostituendo i file),
+   l'app installata si aggiorna da sola al primo avvio con internet.
+   Controlla la versione scritta accanto al nome, in alto.
+
+APK PER ANDROID (facoltativo)
+   Se preferisci un file .apk, puoi crearlo con ApkForge partendo da questa cartella
+   o dall'indirizzo https://essentialapp-2026.github.io/Cartoonia/.

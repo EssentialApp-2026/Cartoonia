@@ -1,0 +1,5 @@
+Voce naturale "Paola" (it_IT-paola-medium) - modello Piper TTS
+Addestrata a partire dalla voce inglese "lessac" (Piper, rhasspy).
+Dataset: https://huggingface.co/datasets/paolapersico1/Voice-Dataset-Italian (licenza: vedi la pagina del dataset).
+La fonetizzazione usa espeak-ng (GPL-3.0, vedi GPL-3.0.txt) tramite piper-phonemize (MIT).
+Nell'app i pesi del modello sono salvati a 8 bit per canale e ricostruiti sul dispositivo.

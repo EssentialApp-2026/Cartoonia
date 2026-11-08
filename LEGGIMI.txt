@@ -1,0 +1,195 @@
+CARTOONIA 2.13 — scrivi una storia, ottieni un cartone animato
+================================================================
+Tutto gira sul telefono o sul PC: niente internet, niente account, niente API,
+niente abbonamenti. Voce, disegni, musica, regia e video vengono generati in locale.
+
+PRIMA COSA DOPO L'AGGIORNAMENTO (importante)
+  1. Sostituisci TUTTI i file sul sito con quelli di questa cartella.
+  2. Apri l'app: se vedi ancora la versione vecchia, chiudila del tutto e riaprila
+     (oppure ricarica la pagina). Da questa versione in poi gli aggiornamenti
+     arrivano subito, alla prima apertura con internet.
+  3. Controlla in alto, accanto al nome: deve esserci «v2.13».
+  4. Sotto «Crea il cartone» deve comparire «Voce: Paola, naturale femminile ✓».
+     Premi «▶ Prova la voce» per sentirla subito.
+  Se usi l'APK fatto con ApkForge, rifallo con questa cartella: l'APK contiene
+  i file vecchi e non si aggiorna da solo.
+
+NOVITÀ DELLA 2.13 — REGISTA IA LOCALE (come Lemo-Opuscar)
+  • Nuovo pulsante viola «Crea con il regista IA» nella scheda Storia. Scrivi un'idea
+    anche di una riga («un gatto vuole la torta del cuoco»): un'IA che gira sul tuo
+    telefono o PC (Qwen 2.5, 1,5 miliardi di parametri) fa da regista come Lemo-Opuscar:
+    inventa la trama (protagonista, ostacolo, svolta, finale), sceglie personaggi, luoghi,
+    momento del giorno, meteo, oggetti, azioni, battute, inquadrature, musica e lo stile
+    del film. Poi Cartoonia lo disegna, gli dà la voce e lo monta.
+  • L'IA può usare solo personaggi, luoghi, azioni e oggetti che Cartoonia sa disegnare:
+    la sceneggiatura è sempre valida. La trovi e la puoi ritoccare nella scheda Script.
+  • Se hai già scelto uno stile, l'IA lo rispetta; se lo stile è «Normale», lo sceglie lei.
+  • «Rigenera variante» dopo un cartone fatto con l'IA chiede all'IA una versione diversa.
+  • La prima volta il regista va scaricato (circa 1 GB, meglio col Wi-Fi). Poi resta sul
+    dispositivo e funziona anche senza internet. Per liberare spazio: Altro › Impostazioni ›
+    «Elimina il regista IA».
+  • Serve Chrome o Edge aggiornati (WebGPU) e Cartoonia aperta dal suo indirizzo
+    https://essentialapp-2026.github.io/Cartoonia/ o dall'app installata: aperta dal file
+    il regista IA non parte (il regista integrato sì). Sul telefono una sceneggiatura
+    richiede circa 1-3 minuti, sul PC molto meno.
+  • Sul sito va caricata anche la nuova cartella «ia» (web-llm.js e worker.js).
+
+NOVITÀ DELLA 2.12 — STILI DEL FILM (Lemo-Opuscar)
+  • Nella scheda «Storia», sopra «Crea il cartone», c'è «Stile del film»: 16 stili
+    ispirati alla libreria Lemo-Opuscar, ognuno con l'anteprima del tuo cartone:
+    Normale, Acquerello, Inchiostro cinese, Libro a pastelli, Film muto, Anime anni '80,
+    Pixel RPG, Terminale (tutto fatto di lettere), Risograph, Fumetto pop,
+    Stampa giapponese, Art déco, Ombre cinesi, Carta ritagliata, Progetto tecnico, Lavagna.
+  • Tocchi uno stile e l'anteprima cambia subito; il video MP4, la GIF, la foto e la
+    copertina escono nello stesso stile. Fumetti, sottotitoli e titoli restano leggibili.
+  • Lo stile si salva nel progetto e si può annullare con ↶ come le altre modifiche.
+  • Tutto resta offline: nessuna IA online, nessuna chiave, nessun costo.
+
+NOVITÀ DELLA 2.11
+  • Se il programma con cui apri il file non fa partire l'app (succede con alcuni
+    visualizzatori del telefono), ora compare una schermata che lo dice e spiega cosa
+    fare: aprire index.html con Chrome. Prima restava tutto fermo su «in preparazione».
+  • Se l'avvio non si completa, dopo 25 secondi compare un riquadro con l'errore preciso
+    (da fotografare e mandare) e il pulsante «Continua comunque».
+  • Se il salvataggio interno del telefono non risponde, dopo 3 secondi l'app va avanti
+    lo stesso invece di restare ferma.
+  • Se la voce di Paola non parte entro 90 secondi, l'app usa la voce robotica e scrive
+    in quale passaggio si è fermata.
+
+NOVITÀ DELLA 2.10
+  • L'app si può usare subito: la voce di Paola si prepara in sottofondo e sotto
+    «Crea il cartone» vedi a che punto è (decomprimo 1/4, avvio il motore 2/4, preparo
+    il modello 3/4, carico la voce 4/4) e da quanti secondi. Sul telefono la prima volta
+    può richiedere fino a un minuto circa.
+  • Aperta dal file sul telefono l'avvio non si interrompe più a metà (prima, in alcuni
+    casi, la voce restava ferma su «in preparazione»).
+  • Sul telefono la voce usa un solo motore invece di due: meno memoria, avvio più leggero.
+  • Consiglio: sul telefono apri index.html con Chrome («Apri con» → Chrome), non con
+    il visualizzatore del gestore file.
+
+NOVITÀ DELLA 2.9
+  • Di nuovo un solo file (index.html, con la voce dentro): aperto direttamente dal
+    telefono si avvia e funziona come prima. Nella 2.8 la voce era in un file a parte
+    e, aprendo index.html dal telefono, l'app restava bloccata all'avvio.
+  • Il file è più leggero (25,1 MB invece di 26,6) e sta sotto il limite di 25 MB di
+    GitHub: si può caricare anche dal sito, pure dal telefono.
+  • Pulsante arancione «Installa» in alto: su Chrome ed Edge (Android e Windows) apre
+    l'installazione; su iPhone, Samsung Internet e Firefox mostra i passaggi giusti.
+    Per installarla serve aprirla dal suo indirizzo internet: leggi «COME INSTALLARE.txt».
+
+NOVITÀ DELLA 2.7
+  • Sul PC il pannello della storia e delle impostazioni è molto più grande. In formato
+    9:16 l'anteprima sta in una colonna stretta a sinistra e il pannello occupa tutto il
+    resto dello schermo: la storia si scrive in un riquadro grande a sinistra e le
+    impostazioni stanno accanto, a destra. Scritte, menu e pulsanti sono più grandi;
+    le schede Scena, Esporta e Altro si dispongono su due colonne. In 16:9 il pannello
+    resta largo circa il 40% dello schermo. Sul telefono non cambia niente.
+
+NOVITÀ DELLA 2.6
+  • I personaggi stanno sempre davanti alle cose: torte, ombrelli, strumenti, alberi e
+    case vengono disegnati dietro di loro e non li coprono più.
+  • Proporzioni giuste: un oggetto (cibo, giocattolo, attrezzo, strumento) non può essere
+    più grande dei personaggi; una «torta enorme» resta grande ma più bassa di chi la mangia.
+  • I personaggi non si sovrappongono: si dispongono in fila con lo spazio che serve;
+    chi arriva o si sposta si ferma nel primo posto libero e, se non c'è, gli altri si
+    scostano; dopo un abbraccio o una spinta ognuno torna al suo posto; chi si nasconde
+    dietro lo stesso oggetto si mette in fila. All'aperto, quando sono tanti, una parte
+    sta su una seconda fila più lontana, sopra le teste della prima.
+  • Disegni nuovi per ciò che prima mancava: 260 tra animali (panda, koala, pulcino, gallo,
+    lontra, bradipo, cinghiale, mammut, scorpione, gambero, brontosauro…) e cose (cibi e
+    frutta, strumenti come violino, tromba, sassofono e arpa, veicoli come treno, trattore,
+    autobus, elicottero e nave, edifici come chiesa, ospedale, negozio e stadio, oggetti di
+    casa, giochi, attrezzi, vestiti). Il regista li riconosce nel testo e li mette in scena.
+    Sono disegni OpenMoji (licenza CC BY-SA 4.0), già dentro l'app: funzionano offline.
+  • Le parole usate solo per paragone («come due gocce», «sembravano coriandoli») non
+    diventano oggetti in scena.
+
+NOVITÀ DELLA 2.5
+  • Formato 9:16: tutta la scena resta dentro l'inquadratura. I personaggi presenti
+    stanno in fila al centro; se sono tanti si rimpiccioliscono un poco e si mettono
+    su due file (quella dietro un po' più in alto, come in prospettiva). La telecamera
+    inquadra il gruppo intero, il più grande possibile, e si avvicina a chi parla solo
+    se non taglia nessuno: niente più personaggi a metà né inquadrature vuote.
+  • Chi esce di scena esce dall'inquadratura, la telecamera resta sul gruppo.
+  • Chi si nasconde dietro lo stesso oggetto si mette in fila lì dietro, senza ammucchiarsi.
+  • Formato 16:9: se la fila è troppo affollata i personaggi si rimpiccioliscono un poco
+    invece di sovrapporsi.
+  • Schermo del PC: l'app si vede tutta anche con le storie lunghe (prima la linea del
+    tempo allargava la pagina e il pannello finiva fuori dallo schermo).
+  • Telefono in orizzontale: anteprima a sinistra e pannello a destra, tutto nello schermo.
+
+NOVITÀ DELLA 2.4
+  • Il regista mette in scena quello che c'è scritto, anche nelle fiabe lunghe:
+    - gruppi di amici della stessa specie con i loro colori: «le sue amiche, con
+      ali rosse, blu cobalto o a pois gialli» diventano tre farfalle rossa, blu e gialla;
+      «le altre farfalle» sono tutte, tranne la protagonista;
+    - l'aspetto descritto viene disegnato: «ali trasparenti come gocce di rugiada»,
+      «un grillo con la passione per il violino» (e lo suona davvero);
+    - il tempo cambia come nel racconto: temporale, goccioloni, pioggia che smette,
+      sole che torna, arcobaleno che compare;
+    - «corsero a ripararsi sotto le foglie» → si nascondono sotto l'ombrello di foglie;
+      «uscirono dai loro rifugi» → tornano fuori; chi parla da nascosto si fa vedere;
+    - insetti, lumache e animaletti piccoli vengono ingranditi quanto serve per vederli;
+    - parole come «Goccioloni» o «Prato dei Girasoli» non diventano personaggi.
+  • Chi va nello stesso punto di un altro si ferma accanto, non sopra.
+
+NOVITÀ DELLA 2.3
+  • Formato verticale 9:16: i personaggi vengono messi in scena vicini tra loro,
+    così stanno tutti nell'inquadratura invece di finire ai bordi; entrano da appena
+    fuori campo e non attraversano tutto lo schermo. Se cambi formato (9:16 / 16:9)
+    la scena viene rimessa in scena da capo, e il video esportato usa sempre la
+    messa in scena giusta per il formato scelto.
+  • Telecamera protetta: non può più finire in una posizione non valida (schermo nero).
+  • Quando torni nell'app dopo averla messa in secondo piano, l'anteprima si ridisegna subito.
+  • Mentre Paola registra le voci vedi quanto manca; le voci già create restano salvate
+    sul telefono, quindi rifare un cartone o una variante è molto più veloce.
+
+NOVITÀ DELLA 2.2
+  • Voce naturale femminile «Paola» (rete neurale Piper) integrata e offline:
+    è la voce del narratore; i personaggi usano la stessa voce più acuta o più
+    grave. Robot, alieni e fantasmi tengono la voce robotica.
+    In Altro › Impostazioni › Voci puoi scegliere: Naturale / Robotiche / Del dispositivo.
+    Se su un dispositivo la voce naturale non riesce a partire, l'app lo scrive
+    chiaramente sotto «Crea il cartone» invece di cambiare voce in silenzio.
+  • Nuovi animali: gazzella (e antilope, impala), cervo (cerbiatto, daino,
+    capriolo, alce) e oltre 70 nomi di animali in più (pavone, pantera, leopardo,
+    asino, lucertola, foca, orca, gorilla, canguro, lontra, castoro, aragosta…).
+  • Nuovo sfondo «Savana» con acacie e erba dorata.
+  • Il regista legge davvero la storia:
+    - capisce chi è chi: «una volpe di nome Leo», «Pippo, un riccio», «Leo era una volpe»;
+    - se la specie non è scritta la deduce dalla descrizione (pelo, zampette, coda, becco…);
+    - riporta l'aspetto: colore del pelo, occhiali, cappello, fiocco, capelli, trecce, barba;
+    - «Quercia Antica», «Radura dei Raggi di Luna» sono luoghi o cose, non personaggi;
+    - «tutti gli animali del bosco» diventa un gruppo di animali del bosco;
+    - le battute tra virgolette vanno al personaggio giusto, anche «…» disse Pippo;
+    - niente personaggi inventati: la «spalla» è spenta (si può riattivare);
+    - nelle storie lunghe non aggiunge battute o morali: segue il tuo testo.
+
+FILE
+  ia/                   Il motore del regista IA (WebLLM). Il modello si scarica a parte.
+  index.html            L'app completa in un solo file (circa 25 MB, voce compresa).
+  manifest.webmanifest  ┐
+  sw.js                 │ Servono per installarla come app (PWA) e usarla offline.
+  icon-*.png            │
+  screenshot-*.jpg      ┘
+  COME INSTALLARE.txt   Come metterla online e installarla su telefono e PC.
+  licenze/              Testi delle licenze dei componenti inclusi.
+
+COME SI USA
+  Storia  → scrivi o incolla la storia in italiano → "Crea il cartone".
+            La prima volta la voce si prepara in qualche secondo.
+            Puoi anche incollare un dialogo nel formato  Nome: battuta
+            oppure uno script già pronto (TITOLO / ATTORE / SCENA ...).
+  Scena   → controlla e cambia specie, colori e voci dei personaggi.
+  Script  → ritocca riga per riga (la guida è dentro l'app).
+  Esporta → Video (MP4 H.264 + AAC su Chrome/Edge per Android e Windows;
+            se il browser non lo supporta salva in WebM), GIF, PNG, copertina 1080×1920.
+
+LICENZE
+  eSpeak/meSpeak ed espeak-ng sono GPL-3.0: se distribuisci l'app, anche il suo
+  codice deve restare disponibile con la stessa licenza (licenze/GPL-3.0.txt).
+  Regista IA: WebLLM (Apache 2.0) e modello Qwen2.5-1.5B-Instruct (Apache 2.0).
+  Stili del film ispirati a Lemo-Opuscar di LemoLab, MIT (licenze/lemo-opuscar-MIT.txt).
+  onnxruntime-web, piper-phonemize, gifenc, mp4-muxer, webm-muxer e tiny-inflate sono MIT.
+  Disegni aggiuntivi: OpenMoji (openmoji.org), CC BY-SA 4.0 (licenze/openmoji.txt).
+  Voce «Paola»: vedi licenze/voce-paola.txt.

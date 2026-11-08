@@ -1,0 +1,2 @@
+Modello linguistico del regista IA: Qwen2.5-1.5B-Instruct (Alibaba Cloud, Qwen team), licenza Apache 2.0.
+Versione compilata per WebGPU da MLC (huggingface.co/mlc-ai). Viene scaricato una volta dal dispositivo e non e' incluso in questa cartella.
