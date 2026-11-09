@@ -3232,7 +3232,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.13';
+const VERSION='2.14';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3425,7 +3425,7 @@ async function setBg(bi,spec){const lines=scriptLines(),b=sceneBlocks()[bi];if(b
 /* ===== Regista IA locale (stile Lemo-Opuscar): un modello linguistico nel browser scrive la sceneggiatura, Cartoonia la disegna ===== */
 const AIDirector=(()=>{
   const MODEL_F16='Qwen2.5-1.5B-Instruct-q4f16_1-MLC',MODEL_F32='Qwen2.5-1.5B-Instruct-q4f32_1-MLC';
-  let engine=null,loading=null,modelId='',state='off',lastErr='';const listeners=new Set();
+  let engine=null,loading=null,modelId='',state='off',lastErr='',forceMain=false;const listeners=new Set();
   const emit=(s,info)=>{state=s;listeners.forEach(f=>{try{f(s,info)}catch(e){}})};
   const ACT_NO=['entra da sinistra','entra da destra','esce','salta','balla','saluta','ride','piange','si arrabbia','ha paura','si sorprende','dorme','si sveglia','beve','canta','suona','cade','si rialza','vola via','vola in alto','atterra','nuota','cerca','si gira','aspetta','starnutisce','sbadiglia','applaude','festeggia','brilla','appare','sparisce','annuisce','scuote la testa','scappa','si innamora'];
   const ACT_T=['cammina verso','corre verso','insegue','salta su','mangia','abbraccia','bacia','litiga con','fa pace con','sale su','scende da','vola verso','prende','trova','guarda','si nasconde dietro','indica','spinge','morde'];
@@ -3470,15 +3470,25 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
       try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
       const url=new URL('ia/web-llm.js',location.href).href,mod=await import(url);
       const cb=r=>{const p=Math.max(0,Math.min(1,r.progress||0));let t=String(r.text||'');const m=t.match(/(\d+)MB/);t=/Fetching|Loading model from cache|fetch/i.test(t)?(/cache/i.test(t)?'Carico il regista dalla memoria':'Scarico il regista IA')+(m?' · '+m[1]+' MB':''):/shader|compil|GPU|Finish/i.test(t)?'Preparo la scheda grafica':'Avvio';emit('loading',{p,text:t});onProg&&onProg(p,t)};
-      let e=null;try{const w=new Worker(new URL('ia/worker.js',location.href),{type:'module'});e=await mod.CreateWebWorkerMLCEngine(w,modelId,{initProgressCallback:cb})}catch(err){console.warn('worker IA non disponibile, uso il thread principale',err);e=await mod.CreateMLCEngine(modelId,{initProgressCallback:cb})}
+      let e=null;try{if(forceMain)throw new Error('main');const w=new Worker(new URL('ia/worker.js',location.href),{type:'module'});e=await mod.CreateWebWorkerMLCEngine(w,modelId,{initProgressCallback:cb})}catch(err){console.warn('worker IA non disponibile, uso il thread principale',err);e=await mod.CreateMLCEngine(modelId,{initProgressCallback:cb})}
       engine=e;emit('ready');return e})();
     try{return await loading}catch(e){loading=null;lastErr=String(e&&e.message||e);emit('error',{msg:lastErr});throw e}}
-  async function write(idea,o,onTok){const e=await load();emit('writing');let txt='';
+  const lostRe=/not loaded|ModelNotLoaded|device (was )?lost|DeviceLost|disposed|reload\(model\)/i;
+  async function reset(mainThread,cb){try{engine&&engine.unload&&await engine.unload()}catch(e){}engine=null;loading=null;forceMain=!!mainThread;return load(cb)}
+  async function write(idea,o,onTok){let e=await load();emit('writing');let txt='';
     const lite=x=>JSON.parse(JSON.stringify(x,(k,v)=>/^(maxLength|minItems|maxItems)$/.test(k)?undefined:v));
     const fmts=[{type:'json_object',schema:JSON.stringify(schema())},{type:'json_object',schema:JSON.stringify(lite(schema()))},{type:'json_object'}];
-    for(let i=0;i<fmts.length;i++){txt='';try{const req={messages:prompt(idea,o),temperature:o.variant?.95:.7,top_p:.9,max_tokens:1900,stream:true,response_format:fmts[i]};
-        const it=await e.chat.completions.create(req);for await(const ch of it){const d=ch.choices&&ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content;if(d){txt+=d;onTok&&onTok(txt)}}break}
-      catch(err){console.warn('regista IA, formato '+i,err);if(i===fmts.length-1||txt.length>40){emit('ready');throw err}}}
+    const run=async f=>{txt='';const req={messages:prompt(idea,o),temperature:o.variant?.95:.7,top_p:.9,max_tokens:1900,stream:true,response_format:f};
+      const it=await e.chat.completions.create(req);for await(const ch of it){const d=ch.choices&&ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content;if(d){txt+=d;onTok&&onTok(txt)}}};
+    let fi=0,rec=0;
+    for(;;){try{await run(fmts[fi]);break}
+      catch(err){const m=String(err&&err.message||err);console.warn('regista IA',fi,rec,err);
+        if(lostRe.test(m)&&rec<2){/* il modello è stato scaricato dalla memoria (app in secondo piano, memoria piena): lo ricarico */
+          rec++;emit('loading',{p:0,text:'Ricarico il regista'});
+          try{if(rec===1&&e.reload){await e.reload(modelId)}else{e=await reset(true)}}catch(e2){console.warn('ricarica',e2);e=await reset(true)}
+          emit('writing');continue}
+        if(txt.length<=40&&fi<fmts.length-1&&!lostRe.test(m)){fi++;continue}
+        emit('ready');throw new Error(lostRe.test(m)?'il telefono ha tolto il regista IA dalla memoria e non sono riuscito a ricaricarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.':m)}}
     emit('ready');let j;try{j=JSON.parse(txt)}catch(err){j=repair(txt)}if(!j)throw new Error('il regista IA non ha finito la sceneggiatura');return j}
   function repair(t){/* chiude un JSON tagliato a metà */let s=t.trim(),st=[],q=false,esc=false;for(const ch of s){if(esc){esc=false;continue}if(ch==='\\'){esc=true;continue}if(ch==='"'){q=!q;continue}if(q)continue;if(ch==='{'||ch==='[')st.push(ch);else if(ch==='}'||ch===']')st.pop()}
     if(q)s+='"';s=s.replace(/,\s*$/,'');while(st.length)s+=st.pop()==='{'?'}':']';try{return JSON.parse(s)}catch(e){return null}}
@@ -3521,11 +3531,12 @@ async function aiAsk(){if(AIDirector.state==='ready')return true;const s=await A
   if(await AIDirector.cached())return true;return await confirmBox('La prima volta scarico il regista IA (Qwen 2.5, circa 1 GB). Meglio col Wi-Fi. Poi resta sul dispositivo e funziona anche senza internet.','Scarica')}
 async function aiPrefetch(){if(!(await aiAsk()))return;try{busy(true,'Preparo il regista IA…',0);await AIDirector.load((p,t)=>busy(true,t+' · '+Math.round(p*100)+'%',p));busy(false);toast('Regista IA pronto ✓')}catch(e){busy(false);modal('Regista IA',`<p class="sub">Non sono riuscito a prepararlo: ${esc(e.message||e)}</p>`)}}
 async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toast('Scrivi prima un\'idea o una storia');$('#story').focus();return}
-  if(!(await aiAsk()))return;stopPlay();const o=storyOpts(),t0=Date.now();let j;
+  if(!(await aiAsk()))return;stopPlay();const o=storyOpts(),t0=Date.now();let j,wl=null;try{wl=navigator.wakeLock&&await navigator.wakeLock.request('screen')}catch(e){}
   try{busy(true,'Preparo il regista IA…',0);await AIDirector.load((p,t)=>busy(true,t+' · '+Math.round(p*100)+'%',p));
-    busy(true,'Il regista IA scrive la sceneggiatura…',.03);let k=0;
+    busy(true,'Il regista IA scrive la sceneggiatura… tieni Cartoonia aperta',.03);let k=0;
     j=await AIDirector.write(idea,Object.assign({},o,{variant:!!variant}),txt=>{if(++k%6)return;const sc=(txt.match(/"luogo"/g)||[]).length,az=(txt.match(/"chi"/g)||[]).length;busy(true,'Il regista IA scrive… scena '+Math.max(1,sc)+' · '+az+' momenti',Math.min(.95,.05+txt.length/3200))})}
-  catch(e){busy(false);console.error(e);await modal('Regista IA',`<p class="sub">Non ci sono riuscito: ${esc(e.message||String(e))}</p><p class="sub">Puoi riprovare o usare «Crea il cartone».</p>`);return}
+  catch(e){try{wl&&wl.release()}catch(_){}busy(false);console.error(e);await modal('Regista IA',`<p class="sub">Non ci sono riuscito: ${esc(e.message||String(e))}</p><p class="sub">Puoi riprovare o usare «Crea il cartone».</p>`);return}
+  try{wl&&wl.release()}catch(_){}
   const r=AIDirector.toScript(j),P=App.proj,userLook=P.opts.look||'';if(!userLook&&r.look)P.opts.look=r.look;
   App._aiRun=true;const box=$('#story');box.value=r.script;try{await makeFromStory(false)}finally{App._aiRun=false;box.value=idea}
   P.story=idea;P.aiMade=true;busy(false);const log=$('#makeLog'),add=(t,c)=>{const d=document.createElement('div');d.className=c||'';d.textContent=t;log.insertBefore(d,log.firstChild)};
@@ -3630,7 +3641,7 @@ async function init(){
   $$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.pane').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.p);$('#panels').scrollTop=0;if(b.dataset.p==='more'){renderProjects();autonomyInfo()}if(b.dataset.p==='script')syncScriptBox()});
   const goTab=p=>$(`#tabs button[data-p="${p}"]`).click();
   $('#makeB').onclick=()=>makeFromStory(false);$('#remakeB').onclick=()=>App.proj&&App.proj.aiMade?aiMake(true):makeFromStory(true);$('#aiMakeB').onclick=()=>aiMake(false);$('#aiLoadB').onclick=()=>aiPrefetch();$('#aiDelB').onclick=aiDelete;aiStatus();
-  AIDirector.on((s,i)=>{const e=$('#aiStat');if(s==='loading'){e.className='';e.textContent='Regista IA: '+(i&&i.text||'avvio')+' '+Math.round((i&&i.p||0)*100)+'%';$('#aiLoadB').hidden=true}else if(s==='ready'){e.className='ok';e.textContent='Regista IA: pronto ✓ (Qwen 1.5B, sul dispositivo)';$('#aiLoadB').hidden=true}else if(s==='writing'){e.className='';e.textContent='Regista IA: sto scrivendo…'}else if(s==='error'){e.className='warn';e.textContent='Regista IA: '+(i&&i.msg||'errore');$('#aiLoadB').hidden=false;$('#aiLoadB').textContent='Riprova'}});$('#toScriptB').onclick=()=>goTab('script');
+  AIDirector.on((s,i)=>{const e=$('#aiStat');if(s==='loading'&&!$('#busy').hidden)busy(true,(i&&i.text||'Preparo il regista')+' · '+Math.round((i&&i.p||0)*100)+'%',i&&i.p||0);if(s==='loading'){e.className='';e.textContent='Regista IA: '+(i&&i.text||'avvio')+' '+Math.round((i&&i.p||0)*100)+'%';$('#aiLoadB').hidden=true}else if(s==='ready'){e.className='ok';e.textContent='Regista IA: pronto ✓ (Qwen 1.5B, sul dispositivo)';$('#aiLoadB').hidden=true}else if(s==='writing'){e.className='';e.textContent='Regista IA: sto scrivendo…'}else if(s==='error'){e.className='warn';e.textContent='Regista IA: '+(i&&i.msg||'errore');$('#aiLoadB').hidden=false;$('#aiLoadB').textContent='Riprova'}});$('#toScriptB').onclick=()=>goTab('script');
   $('#qExportB').onclick=()=>goTab('export');$('#qPlayB').onclick=()=>{App.t=0;startPlay()};
   $('#playB').onclick=()=>App.playing?stopPlay():startPlay();$('#bigPlay').onclick=()=>startPlay();
   $('#scrub').oninput=e=>{App.t=+e.target.value;if(App.playing){Player.stop();startPlay()}App.dirty=true;drawPlayhead()};
