@@ -1,4 +1,4 @@
-CARTOONIA 2.19 — scrivi una storia, ottieni un cartone animato
+CARTOONIA 2.20 — scrivi una storia, ottieni un cartone animato
 ================================================================
 Tutto gira sul telefono o sul PC: niente internet, niente account, niente API,
 niente abbonamenti. Voce, disegni, musica, regia e video vengono generati in locale.
@@ -8,11 +8,22 @@ PRIMA COSA DOPO L'AGGIORNAMENTO (importante)
   2. Apri l'app: se vedi ancora la versione vecchia, chiudila del tutto e riaprila
      (oppure ricarica la pagina). Da questa versione in poi gli aggiornamenti
      arrivano subito, alla prima apertura con internet.
-  3. Controlla in alto, accanto al nome: deve esserci «v2.19».
+  3. Controlla in alto, accanto al nome: deve esserci «v2.20».
   4. Sotto «Crea il cartone» deve comparire «Voce: Paola, naturale femminile ✓».
      Premi «▶ Prova la voce» per sentirla subito.
   Se usi l'APK fatto con ApkForge, rifallo con questa cartella: l'APK contiene
   i file vecchi e non si aggiorna da solo.
+
+NOVITÀ DELLA 2.20 — REGISTA IA RIFATTO
+  • Il regista IA ora scrive una STORIA (8-9 frasi semplici, con nomi, luogo, azioni e
+    battute) invece di una sceneggiatura tecnica: è ciò che un modello piccolo sa fare bene.
+    Poi il regista integrato di Cartoonia la trasforma in scene, movimenti, voci e
+    inquadrature: i personaggi entrano, corrono, inseguono, cadono, ballano.
+  • Il luogo scelto dall'IA viene rispettato (es. «fondale» per una storia sott'acqua).
+  • I nomi che Cartoonia confonderebbe con animali o cose (es. «Dino» = dinosauro) vengono
+    sostituiti da soli.
+  • La storia scritta dall'IA compare nel riepilogo; è anche 3 volte più corta da generare,
+    quindi molto più veloce sul processore del telefono.
 
 NOVITÀ DELLA 2.19
   • Il regista sul processore ora usa il modello da 1 GB (Qwen 2.5 1.5B, circa 950 MB):

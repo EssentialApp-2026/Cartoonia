@@ -3233,7 +3233,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.19';
+const VERSION='2.20';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3526,6 +3526,64 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
         emit('ready');throw new Error((lostRe.test(m)?(size()==='leggero'?'anche il regista leggero non sta nella memoria della scheda grafica di questo dispositivo. Usa «Crea il cartone» qui, o il regista IA dal PC.':'il dispositivo ha tolto il regista IA dalla memoria e non sono riuscito a riavviarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.'):m)+' [dettagli: '+m.slice(0,140)+' · '+modelId+']')}}
     if(/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent||'')){/* sul telefono libero subito la memoria per voce e video */try{await e.unload()}catch(_){}engine=null;loading=null}
     emit('ready');let j;const t0=txt.slice(Math.max(0,txt.indexOf('{')));try{j=JSON.parse(t0)}catch(err){j=repair(t0)}if(!j)throw new Error('il regista IA non ha finito la sceneggiatura');return j}
+  /* ===== nuovo flusso: l'IA scrive la STORIA (testo semplice, è quello che i modelli piccoli fanno bene),
+     il regista integrato di Cartoonia la trasforma in scene, movimenti, voci e inquadrature ===== */
+  function storyPrompt(idea,o){const n=o.length==='breve'?'5-6':o.length==='lunga'?'10-12':'7-9';
+    const looks=LOOK_LIST.filter(l=>l.k).map(l=>l.k).join(', ');
+    const sys=`Sei lo sceneggiatore di Cartoonia, un'app che trasforma una storia breve in un cartone animato per TikTok.
+Scrivi una storia per bambini partendo dall'idea dell'utente, rispettando il suo soggetto.
+Regole:
+- ${n} frasi brevi e semplici, una per riga. Ogni frase è un'azione che si vede.
+- Presenta i personaggi con animale o mestiere e nome, per esempio: «una volpe di nome Leo», «un cuoco di nome Peppe». I nomi sono nomi propri semplici, mai parole che indicano animali o cose (niente Dino, Micio come specie, Stella, Palla).
+- Scegli il luogo più adatto all'idea tra: prato, bosco, giungla, spiaggia, montagna, fattoria, citta, napoli, neve, savana, deserto, spazio, fondale (sott'acqua), cielo, stanza, cucina, scuola, castello, grotta, teatro, mercato. Scrivilo nella riga LUOGO e nominalo nella prima frase.
+- Usa verbi di movimento chiari: entra, esce, cammina verso, corre verso, salta, vola, nuota, insegue, scappa, cade, si rialza, prende, mangia, abbraccia, balla, ride, piange, si arrabbia, festeggia.
+- Metti 3-5 battute di dialogo così: Nome dice: "battuta corta e divertente".${o.dialect==='nap'?' Le battute sono in napoletano simpatico.':''}
+- Problema, svolta e finale felice o buffo. Niente elenchi, niente titoli dentro la storia.
+Rispondi esattamente in questo formato:
+TITOLO: titolo breve
+LUOGO: il luogo scelto
+STILE: uno tra ${looks}
+STORIA:
+la storia, una frase per riga`;
+    const ex=`TITOLO: Il gatto goloso
+LUOGO: cucina
+STILE: fumetto
+STORIA:
+In cucina, un cuoco di nome Peppe prepara una torta.
+Un gatto di nome Micio entra e guarda la torta.
+Micio dice: "Che profumino, la voglio tutta io!"
+Micio salta sul tavolo e prende la torta.
+Peppe si arrabbia e insegue Micio.
+Peppe dice: "Torna qui, ladruncolo!"
+Micio scappa, ma cade sulla farina.
+Peppe ride e abbraccia Micio.
+Micio dice: "Scusa Peppe, facciamo a metà?"`;
+    return[{role:'system',content:sys},{role:'user',content:'Idea: un gatto vuole la torta del cuoco'},{role:'assistant',content:ex},{role:'user',content:'Idea: '+idea.slice(0,800)}]}
+  async function genText(msgs,maxT,temp,onTok){let e=await load();emit('writing');let txt='';
+    if(e.kind==='cpu'){const run=async()=>{txt='';await e.w.createChatCompletion({messages:msgs,max_tokens:maxT,temperature:temp,top_p:.9,top_k:40,stream:true,onData:d=>{const c=d&&d.choices&&d.choices[0]&&d.choices[0].delta&&d.choices[0].delta.content;if(c){txt+=c;onTok&&onTok(txt)}}})};
+      try{await run()}catch(err){console.warn('processore',err);if(txt.length<40){try{await e.unload()}catch(_){}engine=null;loading=null;e=await load();await run()}}}
+    else{let rec=0;
+      for(;;){try{txt='';const it=await e.chat.completions.create({messages:msgs,temperature:temp,top_p:.9,max_tokens:maxT,stream:true});for await(const ch of it){const d=ch.choices&&ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content;if(d){txt+=d;onTok&&onTok(txt)}}break}
+        catch(err){const m=String(err&&err.message||err);console.warn('regista IA',rec,err);const gpu=gpuRe.test(m)||(rec>=1&&/not loaded|ModelNotLoaded/i.test(m));
+          if(gpu){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';throw x}
+          if(lostRe.test(m)&&rec<2){rec++;emit('loading',{p:0,text:'Riavvio il regista'});e=await reset(true);emit('writing');continue}
+          emit('ready');throw new Error(m+' ['+modelId+']')}}}
+    if(/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent||'')){try{await e.unload()}catch(_){}engine=null;loading=null}
+    emit('ready');return txt}
+  function parseStory(t){t=String(t||'').replace(/\r/g,'').replace(/\*\*|__|#+ /g,'');const g=re=>{const m=t.match(re);return m?m[1].trim():''};
+    const title=g(/TITOLO\s*:\s*(.+)/i).replace(/^["«“]|["»”]$/g,'');const st=g(/STILE\s*:\s*([a-zà-ù0-9' ]+)/i).toLowerCase();
+    let body=t;const i=t.search(/STORIA\s*:/i);if(i>=0)body=t.slice(i).replace(/STORIA\s*:/i,'');else body=t.replace(/^(TITOLO|STILE)\s*:.*$/gim,'');
+    body=body.split('\n').map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,'').trim()).filter(l=>l&&!/^(TITOLO|STILE|STORIA)\s*:/i.test(l)).join('\n').replace(/[“”«»]/g,'"').trim();
+    const L=LOOK_LIST.find(l=>l.k&&(st===l.k||st.includes(l.k)||l.n.toLowerCase().includes(st)&&st.length>3));
+    const pw=g(/LUOGO\s*:\s*([^\n]+)/i).toLowerCase().replace(/[^a-zà-ù' ]/g,' ').trim();let place='';if(BG_DRAW[pw])place=pw;else{for(const w of pw.split(/\s+/))if(BG_DRAW[w]){place=w;break}else if(PLACE_WORDS.has(w)){place=PLACE_WORDS.get(w);break}if(!place&&PLACE_WORDS.has(pw))place=PLACE_WORDS.get(pw)}
+    return{title,look:L?L.k:'',place,story:fixNames(body.slice(0,1500))}}
+  /* nomi che il regista integrato scambierebbe per specie, oggetti o luoghi (es. «Dino» = dinosauro): li sostituisco */
+  function fixNames(t){const bad=new Set();for(const k in SPECIES)(SPECIES[k].forms||[]).flat().forEach(w=>bad.add(w.toLowerCase()));for(const w of PLACE_WORDS.keys())bad.add(w);for(const k in PROPS)bad.add(k);
+    const pool=['Leo','Nina','Tobia','Lulù','Pippo','Gegè','Tito','Mimì','Bobo','Zara','Nico','Pina'].filter(n=>!bad.has(n.toLowerCase())&&!new RegExp('\\b'+n+'\\b').test(t));
+    const names=new Set();for(const m of t.matchAll(/di nome\s+([A-ZÀ-Ý][\p{L}]+)/gu))names.add(m[1]);for(const m of t.matchAll(/^([A-ZÀ-Ý][\p{L}]+)\s+dice\s*:/gmu))names.add(m[1]);
+    for(const n of names){if(bad.has(n.toLowerCase())&&pool.length){const nn=pool.shift();t=t.replace(new RegExp('(^|[^\\p{L}])'+n+'(?![\\p{L}])','gu'),'$1'+nn)}}return t}
+  async function writeStory(idea,o,onTok){const txt=await genText(storyPrompt(idea,o),o.length==='lunga'?560:420,o.variant?.95:.75,onTok);const r=parseStory(txt);
+    if(r.story.split(/[.!?\n]/).filter(x=>x.trim().length>3).length<2)throw new Error('il regista IA ha scritto una storia troppo corta, riprova');return r}
   function repair(t){/* chiude un JSON tagliato a metà */let s=t.trim(),st=[],q=false,esc=false;for(const ch of s){if(esc){esc=false;continue}if(ch==='\\'){esc=true;continue}if(ch==='"'){q=!q;continue}if(q)continue;if(ch==='{'||ch==='[')st.push(ch);else if(ch==='}'||ch===']')st.pop()}
     if(q)s+='"';s=s.replace(/,\s*$/,'');while(st.length)s+=st.pop()==='{'?'}':']';try{return JSON.parse(s)}catch(e){return null}}
   /* JSON del regista -> script di Cartoonia (sempre valido: solo parole che il motore conosce) */
@@ -3553,7 +3611,7 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
   function setPref(p){LS('cartoonia.aiModel',p==='auto'?null:p);if(engine){try{engine.unload()}catch(e){}}engine=null;loading=null}
   function useLight(){LS('cartoonia.aiModel','leggero');engine=null;loading=null}
   function useCPU(){LS('cartoonia.aiModel','cpu');engine=null;loading=null}
-  return{support,load,write,toScript,cached,setPref,useLight,useCPU,gbnf,pref,size,MODELS,on:f=>listeners.add(f),get state(){return state},get model(){return modelId},get err(){return lastErr},schema,prompt}})();
+  return{support,load,write,writeStory,parseStory,storyPrompt,toScript,cached,setPref,useLight,useCPU,gbnf,pref,size,MODELS,on:f=>listeners.add(f),get state(){return state},get model(){return modelId},get err(){return lastErr},schema,prompt}})();
 
 let lookT=null;
 function renderLooks(){const g=$('#lookGal');if(!g)return;const cur=(App.proj&&App.proj.opts.look)||'';const v=App.fmt!=='wide';g.classList.toggle('wide',!v);
@@ -3572,17 +3630,19 @@ async function aiPrefetch(){if(!(await aiAsk()))return;try{busy(true,'Preparo il
 async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toast('Scrivi prima un\'idea o una storia');$('#story').focus();return}
   if(!(await aiAsk()))return;stopPlay();const o=storyOpts(),t0=Date.now();let j,wl=null;try{wl=navigator.wakeLock&&await navigator.wakeLock.request('screen')}catch(e){}
   try{busy(true,'Preparo il regista IA…',0);await AIDirector.load((p,t)=>busy(true,t+' · '+Math.round(p*100)+'%',p));
-    busy(true,'Il regista IA scrive la sceneggiatura… tieni Cartoonia aperta',.03);let k=0;
-    j=await AIDirector.write(idea,Object.assign({},o,{variant:!!variant}),txt=>{if(++k%6)return;const sc=(txt.match(/"luogo"/g)||[]).length,az=(txt.match(/"chi"/g)||[]).length;busy(true,'Il regista IA scrive… scena '+Math.max(1,sc)+' · '+az+' momenti',Math.min(.95,.05+txt.length/3200))})}
+    busy(true,'Il regista IA scrive la storia… tieni Cartoonia aperta',.03);let k=0;
+    j=await AIDirector.writeStory(idea,Object.assign({},o,{variant:!!variant}),txt=>{if(++k%4)return;const n=txt.split('\n').filter(x=>x.trim()).length;busy(true,'Il regista IA scrive la storia… '+Math.max(0,n-3)+' frasi',Math.min(.95,.05+txt.length/900))})}
   catch(e){try{wl&&wl.release()}catch(_){}busy(false);console.error(e);
     if(e&&e.need==='cpu'){const ok=await confirmBox('La scheda grafica di questo telefono si è spenta mentre lavorava il regista IA. Faccio lavorare lo stesso regista da 1 GB (Qwen 2.5 1.5B) sul processore: non usa la scheda grafica, quindi è stabile, ma è più lento (alcuni minuti a sceneggiatura). Da scaricare una volta: circa 950 MB, meglio col Wi-Fi.','Usa il processore');if(ok){AIDirector.useCPU();$('#setAiModel').value='cpu';aiStatus();return aiMake(variant)}return}
     if(e&&e.need==='leggero'){const ok=await confirmBox('La scheda grafica del telefono non ha abbastanza memoria per il regista medio e si è fermata. Passo al regista leggero (Qwen 2.5 0.5B, circa 400 MB da scaricare una volta): è più veloce, ma scrive storie più semplici. Sul PC puoi continuare a usare quello medio.','Usa il leggero');if(ok){AIDirector.useLight();$('#setAiModel').value='leggero';aiStatus();return aiMake(variant)}return}
     await modal('Regista IA',`<p class="sub">Non ci sono riuscito: ${esc(e.message||String(e))}</p><p class="sub">Puoi riprovare o usare «Crea il cartone».</p>`);return}
   try{wl&&wl.release()}catch(_){}
-  const r=AIDirector.toScript(j),P=App.proj,userLook=P.opts.look||'';if(!userLook&&r.look)P.opts.look=r.look;
-  App._aiRun=true;const box=$('#story');box.value=r.script;try{await makeFromStory(false)}finally{App._aiRun=false;box.value=idea}
+  const r=j,P=App.proj,userLook=P.opts.look||'';if(!userLook&&r.look)P.opts.look=r.look;
+  App._aiRun=true;const box=$('#story');let sc=null;try{const D=Director.write(r.story,{length:o.length,dialect:o.dialect,music:o.music,narrator:o.narrator,sidekick:o.sidekick,seed:(P.seed||0)+(variant?1:0),sign:App.cfg.sign});sc=D.script;
+    if(r.place&&BG_DRAW[r.place])sc=sc.replace(/^SFONDO\s+\S+/m,'SFONDO '+r.place);if(r.title)sc=sc.replace(/^TITOLO .*$/m,'TITOLO '+r.title.replace(/[\r\n]/g,' '))}catch(err){console.warn('regista integrato',err)}
+  box.value=sc||r.story;try{await makeFromStory(false)}finally{App._aiRun=false;box.value=idea}
   P.story=idea;P.aiMade=true;busy(false);const log=$('#makeLog'),add=(t,c)=>{const d=document.createElement('div');d.className=c||'';d.textContent=t;log.insertBefore(d,log.firstChild)};
-  const L=LOOK_LIST.find(x=>x.k===(P.opts.look||''))||LOOK_LIST[0];add('🎨 Stile: '+L.n+(userLook?' (scelto da te)':' (scelto dal regista IA)'));add('🤖 Regista IA: sceneggiatura scritta sul dispositivo in '+Math.round((Date.now()-t0)/1000)+' s','ok');
+  const L=LOOK_LIST.find(x=>x.k===(P.opts.look||''))||LOOK_LIST[0];add('🎨 Stile: '+L.n+(userLook?' (scelto da te)':' (scelto dal regista IA)'));add('📝 Storia del regista IA: '+r.story.replace(/\n/g,' '));add('🤖 Regista IA: storia scritta sul dispositivo in '+Math.round((Date.now()-t0)/1000)+' s'+(r.title?' · «'+r.title+'»':''),'ok');P.aiStory=r.story;
   renderLooks();scheduleSave()}
 async function aiDelete(){if(!(await confirmBox('Elimino il regista IA da questo dispositivo? Potrai riscaricarlo quando vuoi.','Elimina')))return;try{for(const k of await caches.keys())if(/webllm/i.test(k))await caches.delete(k);try{const r=await navigator.storage.getDirectory();await r.removeEntry('cache',{recursive:true})}catch(_){}if(window.indexedDB&&indexedDB.databases){for(const d of await indexedDB.databases())if(d.name&&/webllm/i.test(d.name))indexedDB.deleteDatabase(d.name)}}catch(e){}toast('Regista IA eliminato');location.reload()}
 function renderStyle(){renderLooks();const P=App.proj,sc=App.sc;$('#scTitle').value=sc?sc.title||'':P.name;$('#scSign').value=sc?sc.sign||'':'';$('#scMusic').value=sc?sc.music||'nessuna':'allegra';$('#scBubbles').checked=P.opts.bubbles!==false;$('#scSubs').checked=!!P.opts.subs;$('#scCam').checked=P.opts.autoCam!==false;$('#camB').classList.toggle('on',P.opts.autoCam!==false)}
