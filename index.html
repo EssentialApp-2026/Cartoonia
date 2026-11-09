@@ -3233,7 +3233,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.20';
+const VERSION='2.21';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3537,7 +3537,7 @@ Regole:
 - Presenta i personaggi con animale o mestiere e nome, per esempio: «una volpe di nome Leo», «un cuoco di nome Peppe». I nomi sono nomi propri semplici, mai parole che indicano animali o cose (niente Dino, Micio come specie, Stella, Palla).
 - Scegli il luogo più adatto all'idea tra: prato, bosco, giungla, spiaggia, montagna, fattoria, citta, napoli, neve, savana, deserto, spazio, fondale (sott'acqua), cielo, stanza, cucina, scuola, castello, grotta, teatro, mercato. Scrivilo nella riga LUOGO e nominalo nella prima frase.
 - Usa verbi di movimento chiari: entra, esce, cammina verso, corre verso, salta, vola, nuota, insegue, scappa, cade, si rialza, prende, mangia, abbraccia, balla, ride, piange, si arrabbia, festeggia.
-- Metti 3-5 battute di dialogo così: Nome dice: "battuta corta e divertente".${o.dialect==='nap'?' Le battute sono in napoletano simpatico.':''}
+- Metti 3-5 battute di dialogo così: Nome dice: "battuta". Le battute sono un vero dialogo: ognuna parla di quello che sta succedendo in quel momento e risponde alla battuta di prima. Frasi complete e semplici, massimo 10 parole, italiano corretto, niente parole inventate, niente inglese.${o.dialect==='nap'?' Le battute sono in napoletano simpatico.':''}
 - Problema, svolta e finale felice o buffo. Niente elenchi, niente titoli dentro la storia.
 Rispondi esattamente in questo formato:
 TITOLO: titolo breve
@@ -3557,8 +3557,22 @@ Peppe si arrabbia e insegue Micio.
 Peppe dice: "Torna qui, ladruncolo!"
 Micio scappa, ma cade sulla farina.
 Peppe ride e abbraccia Micio.
-Micio dice: "Scusa Peppe, facciamo a metà?"`;
-    return[{role:'system',content:sys},{role:'user',content:'Idea: un gatto vuole la torta del cuoco'},{role:'assistant',content:ex},{role:'user',content:'Idea: '+idea.slice(0,800)}]}
+Micio dice: "Scusa Peppe, facciamo a metà?"
+Peppe dice: "Va bene, ma la prossima volta chiedi!"`;
+    const ex2=`TITOLO: Il pulcino e la luna
+LUOGO: fattoria
+STILE: acquerello
+STORIA:
+Di notte, in fattoria, un pulcino di nome Tobia guarda la luna.
+Tobia dice: "Voglio toccare la luna!"
+Tobia salta sul fienile, ma cade nella paglia.
+Una mucca di nome Rosa si avvicina a Tobia.
+Rosa dice: "Ti sei fatto male, piccolo?"
+Tobia dice: "No, ma la luna è troppo alta!"
+Rosa ride e porta Tobia sulla sua schiena.
+Tobia dice: "Da quassù la luna è più vicina!"
+Tobia e Rosa guardano la luna insieme.`;
+    return[{role:'system',content:sys},{role:'user',content:'Idea: un gatto vuole la torta del cuoco'},{role:'assistant',content:ex},{role:'user',content:'Idea: un pulcino vuole toccare la luna'},{role:'assistant',content:ex2},{role:'user',content:'Idea: '+idea.slice(0,800)}]}
   async function genText(msgs,maxT,temp,onTok){let e=await load();emit('writing');let txt='';
     if(e.kind==='cpu'){const run=async()=>{txt='';await e.w.createChatCompletion({messages:msgs,max_tokens:maxT,temperature:temp,top_p:.9,top_k:40,stream:true,onData:d=>{const c=d&&d.choices&&d.choices[0]&&d.choices[0].delta&&d.choices[0].delta.content;if(c){txt+=c;onTok&&onTok(txt)}}})};
       try{await run()}catch(err){console.warn('processore',err);if(txt.length<40){try{await e.unload()}catch(_){}engine=null;loading=null;e=await load();await run()}}}
@@ -3574,6 +3588,8 @@ Micio dice: "Scusa Peppe, facciamo a metà?"`;
     const title=g(/TITOLO\s*:\s*(.+)/i).replace(/^["«“]|["»”]$/g,'');const st=g(/STILE\s*:\s*([a-zà-ù0-9' ]+)/i).toLowerCase();
     let body=t;const i=t.search(/STORIA\s*:/i);if(i>=0)body=t.slice(i).replace(/STORIA\s*:/i,'');else body=t.replace(/^(TITOLO|STILE)\s*:.*$/gim,'');
     body=body.split('\n').map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,'').trim()).filter(l=>l&&!/^(TITOLO|STILE|STORIA)\s*:/i.test(l)).join('\n').replace(/[“”«»]/g,'"').trim();
+    body=body.split('\n').filter(l=>{const m=l.match(/^(.{1,30}?)\s+dice\s*:\s*"?(.*?)"?\s*$/i);const x=m?m[2]:l;if(/[\u3000-\u9fff\uac00-\ud7af\u0400-\u04ff]/.test(x))return false;if(!m)return true;const w=x.split(/\s+/).filter(Boolean);
+      if(w.length<1||w.length>16)return false;if(new Set(w.map(v=>v.toLowerCase())).size<w.length*.6)return false;const en=w.filter(v=>/^(the|and|you|is|are|my|i|to|of|it|what|this|yes|no|hello|please)$/i.test(v)).length;if(en>=2)return false;if(w.some(v=>v.replace(/[^\p{L}]/gu,'').length>18))return false;return true}).join('\n');
     const L=LOOK_LIST.find(l=>l.k&&(st===l.k||st.includes(l.k)||l.n.toLowerCase().includes(st)&&st.length>3));
     const pw=g(/LUOGO\s*:\s*([^\n]+)/i).toLowerCase().replace(/[^a-zà-ù' ]/g,' ').trim();let place='';if(BG_DRAW[pw])place=pw;else{for(const w of pw.split(/\s+/))if(BG_DRAW[w]){place=w;break}else if(PLACE_WORDS.has(w)){place=PLACE_WORDS.get(w);break}if(!place&&PLACE_WORDS.has(pw))place=PLACE_WORDS.get(pw)}
     return{title,look:L?L.k:'',place,story:fixNames(body.slice(0,1500))}}
@@ -3582,7 +3598,7 @@ Micio dice: "Scusa Peppe, facciamo a metà?"`;
     const pool=['Leo','Nina','Tobia','Lulù','Pippo','Gegè','Tito','Mimì','Bobo','Zara','Nico','Pina'].filter(n=>!bad.has(n.toLowerCase())&&!new RegExp('\\b'+n+'\\b').test(t));
     const names=new Set();for(const m of t.matchAll(/di nome\s+([A-ZÀ-Ý][\p{L}]+)/gu))names.add(m[1]);for(const m of t.matchAll(/^([A-ZÀ-Ý][\p{L}]+)\s+dice\s*:/gmu))names.add(m[1]);
     for(const n of names){if(bad.has(n.toLowerCase())&&pool.length){const nn=pool.shift();t=t.replace(new RegExp('(^|[^\\p{L}])'+n+'(?![\\p{L}])','gu'),'$1'+nn)}}return t}
-  async function writeStory(idea,o,onTok){const txt=await genText(storyPrompt(idea,o),o.length==='lunga'?560:420,o.variant?.95:.75,onTok);const r=parseStory(txt);
+  async function writeStory(idea,o,onTok){const txt=await genText(storyPrompt(idea,o),o.length==='lunga'?560:440,o.variant?.85:.6,onTok);const r=parseStory(txt);
     if(r.story.split(/[.!?\n]/).filter(x=>x.trim().length>3).length<2)throw new Error('il regista IA ha scritto una storia troppo corta, riprova');return r}
   function repair(t){/* chiude un JSON tagliato a metà */let s=t.trim(),st=[],q=false,esc=false;for(const ch of s){if(esc){esc=false;continue}if(ch==='\\'){esc=true;continue}if(ch==='"'){q=!q;continue}if(q)continue;if(ch==='{'||ch==='[')st.push(ch);else if(ch==='}'||ch===']')st.pop()}
     if(q)s+='"';s=s.replace(/,\s*$/,'');while(st.length)s+=st.pop()==='{'?'}':']';try{return JSON.parse(s)}catch(e){return null}}
