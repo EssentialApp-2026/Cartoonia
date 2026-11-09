@@ -3233,7 +3233,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.16';
+const VERSION='2.17';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3489,11 +3489,14 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
     let fi=0,rec=0;
     for(;;){try{await run(fmts[fi]);break}
       catch(err){const m=String(err&&err.message||err);console.warn('regista IA',fi,rec,err);
-        if(gpuRe.test(m)&&size()==='medio'&&pref()==='auto'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_LIGHT');x.need='leggero';throw x}
+        /* «model not loaded» subito dopo un riavvio = la scheda grafica si è spenta durante il caricamento (memoria finita) */
+        const gpu=gpuRe.test(m)||(rec>=1&&/not loaded|ModelNotLoaded/i.test(m));
+        if(gpu&&size()==='medio'&&pref()!=='medio'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_LIGHT');x.need='leggero';throw x}
         if(lostRe.test(m)&&rec<2){/* motore in uno stato rotto (modello tolto dalla memoria, oggetti interni cancellati): lo ricreo da zero, i file restano sul dispositivo */
           rec++;emit('loading',{p:0,text:'Riavvio il regista'});e=await reset(true);emit('writing');if(rec===2)fi=fmts.length-1;continue}
         if(fi<fmts.length-1&&txt.length<=40){fi++;continue}
-        emit('ready');throw new Error(lostRe.test(m)?'il telefono ha tolto il regista IA dalla memoria e non sono riuscito a riavviarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.':m)}}
+        emit('ready');throw new Error((lostRe.test(m)?(size()==='leggero'?'anche il regista leggero non sta nella memoria della scheda grafica di questo dispositivo. Usa «Crea il cartone» qui, o il regista IA dal PC.':'il dispositivo ha tolto il regista IA dalla memoria e non sono riuscito a riavviarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.'):m)+' [dettagli: '+m.slice(0,140)+' · '+modelId+']')}}
+    if(/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent||'')){/* sul telefono libero subito la memoria per voce e video */try{await e.unload()}catch(_){}engine=null;loading=null}
     emit('ready');let j;const t0=txt.slice(Math.max(0,txt.indexOf('{')));try{j=JSON.parse(t0)}catch(err){j=repair(t0)}if(!j)throw new Error('il regista IA non ha finito la sceneggiatura');return j}
   function repair(t){/* chiude un JSON tagliato a metà */let s=t.trim(),st=[],q=false,esc=false;for(const ch of s){if(esc){esc=false;continue}if(ch==='\\'){esc=true;continue}if(ch==='"'){q=!q;continue}if(q)continue;if(ch==='{'||ch==='[')st.push(ch);else if(ch==='}'||ch===']')st.pop()}
     if(q)s+='"';s=s.replace(/,\s*$/,'');while(st.length)s+=st.pop()==='{'?'}':']';try{return JSON.parse(s)}catch(e){return null}}
