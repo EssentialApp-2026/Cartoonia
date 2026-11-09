@@ -4,7 +4,7 @@ Per USARLA basta aprire index.html (anche direttamente dal telefono, con Chrome:
 La prima volta la voce di Paola si prepara in sottofondo: sotto «Crea il cartone» vedi a che punto è.
 Se compare la schermata «L'app non è partita», il file è stato aperto con un programma che
 non esegue le app: tieni premuto su index.html → «Apri con» → Chrome.
-Controlla in alto, accanto al nome, che ci sia la versione giusta (es. «v2.15»).
+Controlla in alto, accanto al nome, che ci sia la versione giusta (es. «v2.16»).
 Per INSTALLARLA come app, invece, i browser vogliono che la apri dal suo indirizzo
 internet sicuro (https://): dal file aperto sul telefono o sul PC non si può installare.
 Il modo più semplice è GitHub Pages, come per le altre app EssentialApp: si fa una volta sola.

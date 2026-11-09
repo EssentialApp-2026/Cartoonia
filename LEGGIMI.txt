@@ -1,4 +1,4 @@
-CARTOONIA 2.15 — scrivi una storia, ottieni un cartone animato
+CARTOONIA 2.16 — scrivi una storia, ottieni un cartone animato
 ================================================================
 Tutto gira sul telefono o sul PC: niente internet, niente account, niente API,
 niente abbonamenti. Voce, disegni, musica, regia e video vengono generati in locale.
@@ -8,11 +8,17 @@ PRIMA COSA DOPO L'AGGIORNAMENTO (importante)
   2. Apri l'app: se vedi ancora la versione vecchia, chiudila del tutto e riaprila
      (oppure ricarica la pagina). Da questa versione in poi gli aggiornamenti
      arrivano subito, alla prima apertura con internet.
-  3. Controlla in alto, accanto al nome: deve esserci «v2.15».
+  3. Controlla in alto, accanto al nome: deve esserci «v2.16».
   4. Sotto «Crea il cartone» deve comparire «Voce: Paola, naturale femminile ✓».
      Premi «▶ Prova la voce» per sentirla subito.
   Se usi l'APK fatto con ApkForge, rifallo con questa cartella: l'APK contiene
   i file vecchi e non si aggiorna da solo.
+
+NOVITÀ DELLA 2.16
+  • Regista IA leggero per i telefoni: se la scheda grafica del telefono non regge il
+    regista medio (errori come «mapAsync … Instance reference no longer exists»), Cartoonia
+    propone di passare al regista leggero (Qwen 2.5 0.5B, circa 400 MB) e lo ricorda.
+  • In Altro › Impostazioni › «Regista IA» scegli: Automatico, Medio (PC) o Leggero (telefono).
 
 NOVITÀ DELLA 2.15
   • Corretto l'errore «Cannot pass deleted object as a pointer of type GrammarMatcher»:
@@ -199,7 +205,7 @@ COME SI USA
 LICENZE
   eSpeak/meSpeak ed espeak-ng sono GPL-3.0: se distribuisci l'app, anche il suo
   codice deve restare disponibile con la stessa licenza (licenze/GPL-3.0.txt).
-  Regista IA: WebLLM (Apache 2.0) e modello Qwen2.5-1.5B-Instruct (Apache 2.0).
+  Regista IA: WebLLM (Apache 2.0) e modelli Qwen2.5-1.5B/0.5B-Instruct (Apache 2.0).
   Stili del film ispirati a Lemo-Opuscar di LemoLab, MIT (licenze/lemo-opuscar-MIT.txt).
   onnxruntime-web, piper-phonemize, gifenc, mp4-muxer, webm-muxer e tiny-inflate sono MIT.
   Disegni aggiuntivi: OpenMoji (openmoji.org), CC BY-SA 4.0 (licenze/openmoji.txt).
