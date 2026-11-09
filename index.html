@@ -3232,7 +3232,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.14';
+const VERSION='2.15';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3425,7 +3425,7 @@ async function setBg(bi,spec){const lines=scriptLines(),b=sceneBlocks()[bi];if(b
 /* ===== Regista IA locale (stile Lemo-Opuscar): un modello linguistico nel browser scrive la sceneggiatura, Cartoonia la disegna ===== */
 const AIDirector=(()=>{
   const MODEL_F16='Qwen2.5-1.5B-Instruct-q4f16_1-MLC',MODEL_F32='Qwen2.5-1.5B-Instruct-q4f32_1-MLC';
-  let engine=null,loading=null,modelId='',state='off',lastErr='',forceMain=false;const listeners=new Set();
+  let engine=null,loading=null,modelId='',state='off',lastErr='',forceMain=true;const listeners=new Set();
   const emit=(s,info)=>{state=s;listeners.forEach(f=>{try{f(s,info)}catch(e){}})};
   const ACT_NO=['entra da sinistra','entra da destra','esce','salta','balla','saluta','ride','piange','si arrabbia','ha paura','si sorprende','dorme','si sveglia','beve','canta','suona','cade','si rialza','vola via','vola in alto','atterra','nuota','cerca','si gira','aspetta','starnutisce','sbadiglia','applaude','festeggia','brilla','appare','sparisce','annuisce','scuote la testa','scappa','si innamora'];
   const ACT_T=['cammina verso','corre verso','insegue','salta su','mangia','abbraccia','bacia','litiga con','fa pace con','sale su','scende da','vola verso','prende','trova','guarda','si nasconde dietro','indica','spinge','morde'];
@@ -3473,23 +3473,22 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
       let e=null;try{if(forceMain)throw new Error('main');const w=new Worker(new URL('ia/worker.js',location.href),{type:'module'});e=await mod.CreateWebWorkerMLCEngine(w,modelId,{initProgressCallback:cb})}catch(err){console.warn('worker IA non disponibile, uso il thread principale',err);e=await mod.CreateMLCEngine(modelId,{initProgressCallback:cb})}
       engine=e;emit('ready');return e})();
     try{return await loading}catch(e){loading=null;lastErr=String(e&&e.message||e);emit('error',{msg:lastErr});throw e}}
-  const lostRe=/not loaded|ModelNotLoaded|device (was )?lost|DeviceLost|disposed|reload\(model\)/i;
-  async function reset(mainThread,cb){try{engine&&engine.unload&&await engine.unload()}catch(e){}engine=null;loading=null;forceMain=!!mainThread;return load(cb)}
+  const lostRe=/not loaded|ModelNotLoaded|device (was )?lost|DeviceLost|disposed|deleted object|reload\(model\)|GrammarMatcher\b(?!Init)/i;
+  async function reset(mainThread){try{engine&&engine.unload&&await engine.unload()}catch(e){}engine=null;loading=null;forceMain=!!mainThread;return load()}
   async function write(idea,o,onTok){let e=await load();emit('writing');let txt='';
     const lite=x=>JSON.parse(JSON.stringify(x,(k,v)=>/^(maxLength|minItems|maxItems)$/.test(k)?undefined:v));
-    const fmts=[{type:'json_object',schema:JSON.stringify(schema())},{type:'json_object',schema:JSON.stringify(lite(schema()))},{type:'json_object'}];
-    const run=async f=>{txt='';const req={messages:prompt(idea,o),temperature:o.variant?.95:.7,top_p:.9,max_tokens:1900,stream:true,response_format:f};
+    /* 1) schema completo  2) schema semplice  3) nessun vincolo (solo l'esempio nel prompt) */
+    const fmts=[{type:'json_object',schema:JSON.stringify(schema())},{type:'json_object',schema:JSON.stringify(lite(schema()))},null];
+    const run=async f=>{txt='';const req={messages:prompt(idea,o),temperature:o.variant?.95:.7,top_p:.9,max_tokens:1900,stream:true};if(f)req.response_format=f;
       const it=await e.chat.completions.create(req);for await(const ch of it){const d=ch.choices&&ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content;if(d){txt+=d;onTok&&onTok(txt)}}};
     let fi=0,rec=0;
     for(;;){try{await run(fmts[fi]);break}
       catch(err){const m=String(err&&err.message||err);console.warn('regista IA',fi,rec,err);
-        if(lostRe.test(m)&&rec<2){/* il modello è stato scaricato dalla memoria (app in secondo piano, memoria piena): lo ricarico */
-          rec++;emit('loading',{p:0,text:'Ricarico il regista'});
-          try{if(rec===1&&e.reload){await e.reload(modelId)}else{e=await reset(true)}}catch(e2){console.warn('ricarica',e2);e=await reset(true)}
-          emit('writing');continue}
-        if(txt.length<=40&&fi<fmts.length-1&&!lostRe.test(m)){fi++;continue}
-        emit('ready');throw new Error(lostRe.test(m)?'il telefono ha tolto il regista IA dalla memoria e non sono riuscito a ricaricarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.':m)}}
-    emit('ready');let j;try{j=JSON.parse(txt)}catch(err){j=repair(txt)}if(!j)throw new Error('il regista IA non ha finito la sceneggiatura');return j}
+        if(lostRe.test(m)&&rec<2){/* motore in uno stato rotto (modello tolto dalla memoria, oggetti interni cancellati): lo ricreo da zero, i file restano sul dispositivo */
+          rec++;emit('loading',{p:0,text:'Riavvio il regista'});e=await reset(true);emit('writing');if(rec===2)fi=fmts.length-1;continue}
+        if(fi<fmts.length-1&&txt.length<=40){fi++;continue}
+        emit('ready');throw new Error(lostRe.test(m)?'il telefono ha tolto il regista IA dalla memoria e non sono riuscito a riavviarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.':m)}}
+    emit('ready');let j;const t0=txt.slice(Math.max(0,txt.indexOf('{')));try{j=JSON.parse(t0)}catch(err){j=repair(t0)}if(!j)throw new Error('il regista IA non ha finito la sceneggiatura');return j}
   function repair(t){/* chiude un JSON tagliato a metà */let s=t.trim(),st=[],q=false,esc=false;for(const ch of s){if(esc){esc=false;continue}if(ch==='\\'){esc=true;continue}if(ch==='"'){q=!q;continue}if(q)continue;if(ch==='{'||ch==='[')st.push(ch);else if(ch==='}'||ch===']')st.pop()}
     if(q)s+='"';s=s.replace(/,\s*$/,'');while(st.length)s+=st.pop()==='{'?'}':']';try{return JSON.parse(s)}catch(e){return null}}
   /* JSON del regista -> script di Cartoonia (sempre valido: solo parole che il motore conosce) */
