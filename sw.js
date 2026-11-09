@@ -1,6 +1,6 @@
 /* Cartoonia: la pagina arriva sempre aggiornata dalla rete quando c'è connessione, dalla cache quando sei offline.
    Le intestazioni COOP/COEP rendono la pagina "isolata": serve al regista IA sul processore per usare più core. */
-const CACHE='cartoonia-v2-22-1794203718';const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png'];
+const CACHE='cartoonia-v2-23-1794207878';const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png'];
 const coi=res=>{if(!res||res.type==='opaque'||res.status===0)return res;const h=new Headers(res.headers);h.set('Cross-Origin-Opener-Policy','same-origin');h.set('Cross-Origin-Embedder-Policy','credentialless');return new Response(res.body,{status:res.status,statusText:res.statusText,headers:h})};
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 /* cancella solo le vecchie copie dell'app: i modelli del regista IA (cache "webllm") restano */

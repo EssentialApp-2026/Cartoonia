@@ -3233,7 +3233,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.22';
+const VERSION='2.23';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3618,6 +3618,32 @@ Tobia e Rosa guardano la luna insieme.`;
     for(const n of names){if(bad.has(n.toLowerCase())&&pool.length){const nn=pool.shift();t=t.replace(new RegExp('(^|[^\\p{L}])'+n+'(?![\\p{L}])','gu'),'$1'+nn)}}return t}
   async function writeStory(idea,o,onTok){const txt=await genText(storyPrompt(idea,o),o.length==='lunga'?560:440,o.variant?.85:.6,onTok);const r=parseStory(txt);
     if(r.story.split(/[.!?\n]/).filter(x=>x.trim().length>3).length<2)throw new Error('il regista IA ha scritto una storia troppo corta, riprova');return r}
+  /* «animatore»: dopo il regista integrato, ogni momento senza movimento riceve un'azione presa dal testo
+     (corre, salta, abbraccia, mangia, ride…), o almeno un gesto, così i personaggi non restano mai fermi */
+  function animate(sc){const L=sc.split('\n'),actors=[...sc.matchAll(/^(?:ATTORE|PERSONAGGIO)\s+(\S+)/gm)].map(m=>m[1]);if(!actors.length)return sc;
+    const props=[...sc.matchAll(/^OGGETTO\s+(\S+)/gm)].map(m=>m[1]);const low=x=>x.toLowerCase();
+    const nameIn=(txt,a)=>new RegExp('(^|[^\\p{L}])'+a.replace(/_/g,'[ _]')+'(?![\\p{L}])','iu').test(txt);
+    const isAct=l=>{const t=l.replace(/^\+\s*/,'');const n=t.split(/\s+/)[0];return(actors.includes(n)||n==='Tutti')&&!/^\S+(\s+(urla|sussurra|pensa))?\s*:/.test(t)};
+    const other=a=>actors.find(x=>x!==a)||null;
+    const verb=(txt,a)=>{const t=low(txt),o=other(a),pr=props.find(x=>t.includes(low(x).replace(/_/g,' ')));
+      if(/abbracc/.test(t)&&o)return'abbraccia '+o;if(/insegu/.test(t)&&o)return'insegue '+o;if(/scapp|fugg/.test(t))return'scappa';if(/\bcorr/.test(t))return o?'corre verso '+o:'salta';
+      if(/salt/.test(t))return'salta';if(/ball|danz/.test(t))return'balla';if(/festegg|evviva|urrà|che bello|felic|content|gioi/.test(t))return'festeggia';if(/\brid|\bride|sorrid|risat|ah ah/.test(t))return'ride';
+      if(/piang|triste|lacrim/.test(t))return'piange';if(/arrabb|furios/.test(t))return'si arrabbia';if(/paura|spavent|aiuto/.test(t))return'ha paura';if(/sorpres|stupit|\bwow|\boh\b|incredibil/.test(t))return'si sorprende';
+      if(/mangi|assaggi|divor/.test(t))return pr?'mangia '+pr:(o?'cammina verso '+o:'salta');if(/prend|afferr|raccogl/.test(t)&&pr)return'prende '+pr;if(/trov/.test(t)&&pr)return'trova '+pr;
+      if(/\bvol[ao]/.test(t))return'vola in alto';if(/nuot/.test(t))return'nuota';if(/\bcad/.test(t))return'cade';if(/dorm|sonno/.test(t))return'dorme';if(/svegli/.test(t))return'si sveglia';
+      if(/ciao|salut|buongiorno/.test(t))return'saluta';if(/canta/.test(t))return'canta';
+      if(/arriv|avvicin|\bva\b|vanno|cammin|torna|raggiung/.test(t))return o?'cammina verso '+o:'salta';if(/cerc/.test(t))return'cerca';
+      if(/guard|\bvede|osserv/.test(t))return pr?'guarda '+pr:(o?'guarda '+o:'si gira');
+      if(/grazie|\bsì\b|va bene|d'accordo|certo|giusto/.test(t))return'annuisce';if(/\bno\b|\bmai\b/.test(t))return'scuote la testa';return null};
+    const gest=['si gira','annuisce','salta','saluta','si sorprende'];let gi=0;const out=[];
+    for(let i=0;i<L.length;i++){const l=L[i];out.push(l);if(/^\s*$|^\+|^(TITOLO|MUSICA|ATTORE|PERSONAGGIO|SCENA|SFONDO|OGGETTO|METEO|CAMERA)\b/.test(l)||isAct(l))continue;
+      let j=i+1,has=false;while(j<L.length&&/^\+/.test(L[j])){if(isAct(L[j]))has=true;j++}if(has)continue;
+      const m=l.match(/^(\S+?)(?:\s+(?:urla|sussurra|pensa))?\s*:\s*(.*)$/);if(!m)continue;const who=m[1],txt=m[2];const add=[];
+      if(who==='NARRATORE'){let subj=actors.filter(a=>nameIn(txt,a));if(/\b(tutti|insieme|i due|amici)\b/i.test(txt))subj=actors.slice();if(!subj.length)subj=[actors[gi%actors.length]];
+        for(const a of subj.slice(0,3)){const v=verb(txt,a)||(subj.length>1?'festeggia':(other(a)?'cammina verso '+other(a):gest[gi++%gest.length]));add.push('+ '+a+' '+v)}}
+      else if(actors.includes(who)){add.push('+ '+who+' '+(verb(txt,who)||gest[gi++%gest.length]))}
+      if(add.length){for(let q=i+1;q<j;q++)out.push(L[q]);out.push(...add);i=j-1}}
+    return out.join('\n')}
   function repair(t){/* chiude un JSON tagliato a metà */let s=t.trim(),st=[],q=false,esc=false;for(const ch of s){if(esc){esc=false;continue}if(ch==='\\'){esc=true;continue}if(ch==='"'){q=!q;continue}if(q)continue;if(ch==='{'||ch==='[')st.push(ch);else if(ch==='}'||ch===']')st.pop()}
     if(q)s+='"';s=s.replace(/,\s*$/,'');while(st.length)s+=st.pop()==='{'?'}':']';try{return JSON.parse(s)}catch(e){return null}}
   /* JSON del regista -> script di Cartoonia (sempre valido: solo parole che il motore conosce) */
@@ -3647,7 +3673,7 @@ Tobia e Rosa guardano la luna insieme.`;
   function useLight(){LS('cartoonia.aiModel','gpu-qwen25-0.5');engine=null;loading=null}
   function useCPU(k){LS('cartoonia.aiModel',k||cpuTwin());engine=null;loading=null}
   function setCustom(u){LS('cartoonia.aiCustomURL',u||null);engine=null;loading=null}
-  return{support,load,write,writeStory,parseStory,storyPrompt,toScript,cached,setPref,useLight,useCPU,setCustom,customURL,info,gbnf,pref,size,MODELS,on:f=>listeners.add(f),get state(){return state},get model(){return modelId},get err(){return lastErr},schema,prompt}})();
+  return{animate,support,load,write,writeStory,parseStory,storyPrompt,toScript,cached,setPref,useLight,useCPU,setCustom,customURL,info,gbnf,pref,size,MODELS,on:f=>listeners.add(f),get state(){return state},get model(){return modelId},get err(){return lastErr},schema,prompt}})();
 
 let lookT=null;
 function renderLooks(){const g=$('#lookGal');if(!g)return;const cur=(App.proj&&App.proj.opts.look)||'';const v=App.fmt!=='wide';g.classList.toggle('wide',!v);
@@ -3682,7 +3708,7 @@ async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toa
   try{wl&&wl.release()}catch(_){}
   const r=j,P=App.proj,userLook=P.opts.look||'';if(!userLook&&r.look)P.opts.look=r.look;
   App._aiRun=true;const box=$('#story');let sc=null;try{const D=Director.write(r.story,{length:o.length,dialect:o.dialect,music:o.music,narrator:o.narrator,sidekick:o.sidekick,seed:(P.seed||0)+(variant?1:0),sign:App.cfg.sign});sc=D.script;
-    if(r.place&&BG_DRAW[r.place])sc=sc.replace(/^SFONDO\s+\S+/m,'SFONDO '+r.place);if(r.title)sc=sc.replace(/^TITOLO .*$/m,'TITOLO '+r.title.replace(/[\r\n]/g,' '))}catch(err){console.warn('regista integrato',err)}
+    if(r.place&&BG_DRAW[r.place])sc=sc.replace(/^SFONDO\s+\S+/m,'SFONDO '+r.place);if(r.title)sc=sc.replace(/^TITOLO .*$/m,'TITOLO '+r.title.replace(/[\r\n]/g,' '));sc=AIDirector.animate(sc)}catch(err){console.warn('regista integrato',err)}
   box.value=sc||r.story;try{await makeFromStory(false)}finally{App._aiRun=false;box.value=idea}
   P.story=idea;P.aiMade=true;busy(false);const log=$('#makeLog'),add=(t,c)=>{const d=document.createElement('div');d.className=c||'';d.textContent=t;log.insertBefore(d,log.firstChild)};
   const L=LOOK_LIST.find(x=>x.k===(P.opts.look||''))||LOOK_LIST[0];add('🎨 Stile: '+L.n+(userLook?' (scelto da te)':' (scelto dal regista IA)'));add('📝 Storia del regista IA: '+r.story.replace(/\n/g,' '));add('🤖 Regista IA: storia scritta sul dispositivo in '+Math.round((Date.now()-t0)/1000)+' s'+(r.title?' · «'+r.title+'»':''),'ok');P.aiStory=r.story;

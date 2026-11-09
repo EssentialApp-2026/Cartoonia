@@ -1,4 +1,4 @@
-CARTOONIA 2.22 — scrivi una storia, ottieni un cartone animato
+CARTOONIA 2.23 — scrivi una storia, ottieni un cartone animato
 ================================================================
 Tutto gira sul telefono o sul PC: niente internet, niente account, niente API,
 niente abbonamenti. Voce, disegni, musica, regia e video vengono generati in locale.
@@ -8,11 +8,17 @@ PRIMA COSA DOPO L'AGGIORNAMENTO (importante)
   2. Apri l'app: se vedi ancora la versione vecchia, chiudila del tutto e riaprila
      (oppure ricarica la pagina). Da questa versione in poi gli aggiornamenti
      arrivano subito, alla prima apertura con internet.
-  3. Controlla in alto, accanto al nome: deve esserci «v2.22».
+  3. Controlla in alto, accanto al nome: deve esserci «v2.23».
   4. Sotto «Crea il cartone» deve comparire «Voce: Paola, naturale femminile ✓».
      Premi «▶ Prova la voce» per sentirla subito.
   Se usi l'APK fatto con ApkForge, rifallo con questa cartella: l'APK contiene
   i file vecchi e non si aggiorna da solo.
+
+NOVITÀ DELLA 2.23
+  • Con il regista IA i personaggi non restano più fermi: un «animatore» controlla ogni
+    momento della storia e, se manca un movimento, lo aggiunge prendendolo dal testo
+    (arriva → cammina verso, mangiano → mangia, felice → festeggia, «grazie» → annuisce…)
+    o, se il testo non lo dice, con un gesto (si gira, salta, saluta). Anche chi parla si muove.
 
 NOVITÀ DELLA 2.22 — SCEGLI IL MODELLO LOCALE
   • Altro › Impostazioni › «Regista IA (modello locale)»: scegli tu il cervello del regista.
