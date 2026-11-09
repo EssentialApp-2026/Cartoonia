@@ -317,7 +317,7 @@ setTimeout(function(){if(window.__appOK)return;var m=document.getElementById('no
       <label class="f">Volume musica</label><div class="slider"><input type="range" id="setVolM" min="0" max="1" step="0.02"><output id="setVolMo"></output></div>
       <div class="toggles"><label class="tg"><input type="checkbox" id="setSfx" checked><span>Effetti sonori</span></label><label class="tg"><input type="checkbox" id="setVig" checked><span>Vignettatura</span></label><label class="tg"><input type="checkbox" id="setHQ" checked><span>Anteprima alta qualità</span></label></div>
       <label class="f" for="setSign">Firma predefinita</label><input type="text" id="setSign" maxlength="40" placeholder="Es. EssentialApp">
-      <label class="f" for="setAiModel">Regista IA</label><select id="setAiModel"><option value="auto">Automatico (scheda grafica; processore se non regge)</option><option value="medio">Medio · Qwen 1.5B, ≈1 GB (consigliato sul PC)</option><option value="leggero">Leggero · Qwen 0.5B, ≈400 MB (per telefoni)</option><option value="cpu">Processore · Qwen 1.5B, ≈950 MB (più lento, senza scheda grafica)</option></select>
+      <label class="f" for="setAiModel">Regista IA (modello locale)</label><select id="setAiModel"></select><div id="aiCustomRow" hidden style="margin-top:6px"><input type="url" id="aiCustomURL" placeholder="Link di un file .gguf (es. da huggingface.co)"><p class="mini" style="margin:4px 0 0;opacity:.8">Gira sul processore. Scegli file .gguf in versione Q4, sotto i 2 GB.</p></div><p class="mini" id="aiModelInfo" style="margin:6px 0 0;opacity:.85"></p>
       <div class="row"><button class="btn" id="installB" hidden>Installa l'app</button><button class="btn ghost" id="aiDelB">Elimina il regista IA (libera ≈1 GB)</button></div>
      </div>
      <div class="card"><h3><svg class="i"><use href="#i-shield"/></svg>Autonomia</h3><div id="autoInfo"></div></div>
@@ -3233,7 +3233,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.21';
+const VERSION='2.22';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3425,13 +3425,30 @@ async function pickBg(bi){const bl=sceneBlocks(),b=bl[bi];if(!b)return;const lin
 async function setBg(bi,spec){const lines=scriptLines(),b=sceneBlocks()[bi];if(b.bgLine>=0)lines[b.bgLine]='SFONDO '+spec;else lines.splice(b.start+1,0,'SFONDO '+spec);await setScript(lines,true)}
 /* ===== Regista IA locale (stile Lemo-Opuscar): un modello linguistico nel browser scrive la sceneggiatura, Cartoonia la disegna ===== */
 const AIDirector=(()=>{
-  const MODELS={medio:['Qwen2.5-1.5B-Instruct-q4f16_1-MLC','Qwen2.5-1.5B-Instruct-q4f32_1-MLC','1.5B','≈1 GB'],leggero:['Qwen2.5-0.5B-Instruct-q4f16_1-MLC','Qwen2.5-0.5B-Instruct-q4f32_1-MLC','0.5B','≈400 MB'],
-    cpu:['https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_0.gguf','','1.5B','≈950 MB']};
+  /* catalogo dei modelli locali: gpu = WebLLM (scheda grafica, veloce), cpu = wllama/llama.cpp (processore, stabile ovunque) */
+  const HF='https://huggingface.co/bartowski/';
+  const MODELS={
+    'gpu-qwen25-0.5':{kind:'gpu',id:'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',label:'Qwen 2.5 0.5B',size:'≈400 MB',note:'molto veloce, storie semplici'},
+    'gpu-qwen25-1.5':{kind:'gpu',id:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',label:'Qwen 2.5 1.5B',size:'≈1 GB',note:'equilibrato'},
+    'gpu-qwen3-1.7':{kind:'gpu',id:'Qwen3-1.7B-q4f16_1-MLC',label:'Qwen 3 1.7B',size:'≈1,2 GB',note:'più recente, buon italiano',think:1},
+    'gpu-gemma2-2':{kind:'gpu',id:'gemma-2-2b-it-q4f16_1-MLC',label:'Gemma 2 2B',size:'≈1,6 GB',note:'ottimo italiano',nosys:1},
+    'gpu-qwen25-3':{kind:'gpu',id:'Qwen2.5-3B-Instruct-q4f16_1-MLC',label:'Qwen 2.5 3B',size:'≈2 GB',note:'dialoghi migliori, serve un buon PC'},
+    'gpu-llama32-3':{kind:'gpu',id:'Llama-3.2-3B-Instruct-q4f16_1-MLC',label:'Llama 3.2 3B',size:'≈2 GB',note:'serve un buon PC'},
+    'gpu-qwen3-4':{kind:'gpu',id:'Qwen3-4B-q4f16_1-MLC',label:'Qwen 3 4B',size:'≈2,5 GB',note:'il migliore, serve un PC con 4 GB di grafica',think:1},
+    'gpu-phi35':{kind:'gpu',id:'Phi-3.5-mini-instruct-q4f16_1-MLC',label:'Phi 3.5 mini',size:'≈2,4 GB',note:'serve un buon PC'},
+    'cpu-qwen25-1.5':{kind:'cpu',url:HF+'Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_0.gguf',label:'Qwen 2.5 1.5B',size:'≈950 MB',note:'il più veloce sul telefono'},
+    'cpu-qwen3-1.7':{kind:'cpu',url:HF+'Qwen_Qwen3-1.7B-GGUF/resolve/main/Qwen_Qwen3-1.7B-Q4_0.gguf',label:'Qwen 3 1.7B',size:'≈1,2 GB',note:'più recente, buon italiano',think:1},
+    'cpu-gemma2-2':{kind:'cpu',url:HF+'gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf',label:'Gemma 2 2B',size:'≈1,7 GB',note:'ottimo italiano, più lento',nosys:1},
+    'cpu-qwen25-3':{kind:'cpu',url:HF+'Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_0.gguf',label:'Qwen 2.5 3B',size:'≈1,8 GB',note:'dialoghi migliori, lento sul telefono'},
+    'cpu-llama32-3':{kind:'cpu',url:HF+'Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0.gguf',label:'Llama 3.2 3B',size:'≈1,9 GB',note:'lento sul telefono'}};
   const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}return null};
-  /* scelta: auto (medio, poi leggero se la scheda grafica del dispositivo non regge), medio, leggero */
-  const pref=()=>LS('cartoonia.aiModel')||'auto';
+  const LEGACY={medio:'gpu-qwen25-1.5',leggero:'gpu-qwen25-0.5',cpu:'cpu-qwen25-1.5'};
+  /* scelta salvata: 'auto', una chiave del catalogo, o 'custom' (link GGUF incollato) */
+  const pref=()=>{let p=LS('cartoonia.aiModel')||'auto';if(LEGACY[p])p=LEGACY[p];return p};
   let noGPU=false;
-  const size=()=>{const p=pref();if(MODELS[p])return p;if(noGPU||LS('cartoonia.aiCPU')==='1')return'cpu';return LS('cartoonia.aiLight')==='1'?'leggero':'medio'};
+  const customURL=()=>LS('cartoonia.aiCustomURL')||'';
+  const size=()=>{const p=pref();if(MODELS[p])return p;if(p==='custom'&&customURL())return'custom';if(noGPU||LS('cartoonia.aiCPU')==='1')return'cpu-qwen25-1.5';return'gpu-qwen25-1.5'};
+  const info=k=>{k=k||size();if(k==='custom'){const u=customURL();return{kind:'cpu',url:u,label:decodeURIComponent((u.split('/').pop()||'modello').replace(/\.gguf.*$/i,'')),size:'',note:'personalizzato',think:/qwen3/i.test(u)?1:0,nosys:/gemma/i.test(u)?1:0}}return MODELS[k]||MODELS['gpu-qwen25-1.5']};
   let engine=null,loading=null,modelId='',state='off',lastErr='',forceMain=true;const listeners=new Set();
   const emit=(s,info)=>{state=s;listeners.forEach(f=>{try{f(s,info)}catch(e){}})};
   const ACT_NO=['entra da sinistra','entra da destra','esce','salta','balla','saluta','ride','piange','si arrabbia','ha paura','si sorprende','dorme','si sveglia','beve','canta','suona','cade','si rialza','vola via','vola in alto','atterra','nuota','cerca','si gira','aspetta','starnutisce','sbadiglia','applaude','festeggia','brilla','appare','sparisce','annuisce','scuote la testa','scappa','si innamora'];
@@ -3470,13 +3487,13 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
     return[{role:'system',content:sys+'\n\n'+ex},{role:'user',content:'Storia o idea: '+idea.slice(0,1500)}]}
   async function hasGPU(){try{if(!navigator.gpu)return null;const a=await navigator.gpu.requestAdapter();if(!a)return null;return{f16:a.features&&a.features.has('shader-f16')}}catch(e){return null}}
   async function support(){if(!window.isSecureContext||!/^https?:/.test(location.protocol))return{ok:false,why:'Il regista IA funziona quando apri Cartoonia dal suo indirizzo internet (https://essentialapp-2026.github.io/Cartoonia/) o dall\'app installata, non dal file.'};
-    if(size()==='cpu')return{ok:true,cpu:true};
+    if(info().kind==='cpu')return{ok:true,cpu:true};
     const g=await hasGPU();if(!g&&pref()==='auto'){noGPU=true;return{ok:true,cpu:true}}if(!g)return{ok:false,why:'Questo browser non ha WebGPU, che serve per far girare l\'IA sul dispositivo. Usa Chrome aggiornato (Android o Windows) o Edge.'};return{ok:true,f16:g.f16}}
-  async function cachedCpu(){try{const mod=await import(new URL('ia/wllama/index.js',location.href).href),w=new mod.Wllama(wpaths());const b=await w.cacheManager.open(MODELS.cpu[0]);return!!b}catch(e){console.warn(e);return false}}
+  async function cachedCpu(url){try{const mod=await import(new URL('ia/wllama/index.js',location.href).href),w=new mod.Wllama(wpaths());const b=await w.cacheManager.open(url);return!!b}catch(e){console.warn(e);return false}}
   const wpaths=()=>({default:new URL('ia/wllama/wllama.wasm',location.href).href});
-  async function cached(sz){if((sz||size())==='cpu')return cachedCpu();const tag=MODELS[sz||size()][2].replace('.','\\.');const re=new RegExp('Qwen2\\.5-'+tag);try{const ks=await caches.keys();for(const k of ks){if(!/webllm/i.test(k))continue;const c=await caches.open(k),r=await c.keys();if(r.some(q=>re.test(q.url)))return true}}catch(e){}return false}
+  async function cached(k){const M=info(k);if(M.kind==='cpu')return M.url?cachedCpu(M.url):false;const base=M.id.split('-q4')[0];try{const ks=await caches.keys();for(const c of ks){if(!/webllm/i.test(c))continue;const cc=await caches.open(c),r=await cc.keys();if(r.some(q=>q.url.includes(base)))return true}}catch(e){}return false}
   async function load(onProg){if(engine)return engine;if(loading)return loading;
-    loading=(async()=>{const s=await support();if(!s.ok)throw new Error(s.why);if(s.cpu)return loadCpu(onProg);const M=MODELS[size()];modelId=s.f16?M[0]:M[1];emit('loading',{p:0,text:'Avvio…'});
+    loading=(async()=>{const s=await support();if(!s.ok)throw new Error(s.why);if(s.cpu)return loadCpu(onProg);const M=info();modelId=s.f16?M.id:M.id.replace('q4f16_1','q4f32_1');emit('loading',{p:0,text:'Avvio…'});
       try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
       const url=new URL('ia/web-llm.js',location.href).href,mod=await import(url);
       const cb=r=>{const p=Math.max(0,Math.min(1,r.progress||0));let t=String(r.text||'');const m=t.match(/(\d+)MB/);t=/Fetching|Loading model from cache|fetch/i.test(t)?(/cache/i.test(t)?'Carico il regista dalla memoria':'Scarico il regista IA')+(m?' · '+m[1]+' MB':''):/shader|compil|GPU|Finish/i.test(t)?'Preparo la scheda grafica':'Avvio';emit('loading',{p,text:t});onProg&&onProg(p,t)};
@@ -3484,12 +3501,12 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
       engine=e;emit('ready');return e})();
     try{return await loading}catch(e){loading=null;lastErr=String(e&&e.message||e);emit('error',{msg:lastErr});throw e}}
   /* motore sul processore (llama.cpp in WebAssembly): più lento, ma non usa la scheda grafica */
-  async function loadCpu(onProg){modelId='Qwen2.5-1.5B-Instruct-Q4_0 (processore)';emit('loading',{p:0,text:'Avvio sul processore'});
+  async function loadCpu(onProg){const M=info();if(!M.url)throw new Error('manca il link del modello personalizzato (Altro › Impostazioni › Regista IA)');modelId=M.label+' (processore)';emit('loading',{p:0,text:'Avvio sul processore'});
     try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
     const mod=await import(new URL('ia/wllama/index.js',location.href).href),w=new mod.Wllama(wpaths(),{allowOffline:true,logger:{debug(){},log(){},warn:console.warn,error:console.error}});
-    await w.loadModelFromUrl(MODELS.cpu[0],{n_ctx:4096,n_batch:256,n_gpu_layers:0,progressCallback:({loaded,total})=>{const p=total?loaded/total:0,t=(p>=.999?'Carico il regista':'Scarico il regista (processore)')+' · '+Math.round(loaded/1048576)+' MB';emit('loading',{p,text:t});onProg&&onProg(p,t)}});
+    await w.loadModelFromUrl(M.url,{n_ctx:4096,n_batch:256,n_gpu_layers:0,progressCallback:({loaded,total})=>{const p=total?loaded/total:0,t=(p>=.999?'Carico il regista':'Scarico il regista (processore)')+' · '+Math.round(loaded/1048576)+' MB';emit('loading',{p,text:t});onProg&&onProg(p,t)}});
     /* via i file di modelli vecchi (es. 0.5B delle versioni precedenti) per liberare spazio */
-    try{for(const c of await w.cacheManager.list()){const u=(c.metadata&&c.metadata.originalURL)||c.name||'';if(!u.includes('Qwen2.5-1.5B-Instruct-Q4_0'))await w.cacheManager.delete(c.name)}}catch(_){}
+    try{for(const c of await w.cacheManager.list()){const u=(c.metadata&&c.metadata.originalURL)||c.name||'';if(u.includes('Qwen2.5-0.5B-Instruct-Q4_0'))await w.cacheManager.delete(c.name)}}catch(_){}
     const e={kind:'cpu',w,unload:async()=>{try{await w.exit()}catch(_){}}};engine=e;emit('ready');return e}
   /* JSON schema -> grammatica GBNF di llama.cpp (solo le forme usate da schema()) */
   function gbnf(sc){const rules=[];let n=0;const lit=v=>JSON.stringify(JSON.stringify(v));const def=b=>{const k='r'+(n++);rules.push(k+' ::= '+b);return k};
@@ -3518,12 +3535,11 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
       catch(err){const m=String(err&&err.message||err);console.warn('regista IA',fi,rec,err);
         /* «model not loaded» subito dopo un riavvio = la scheda grafica si è spenta durante il caricamento (memoria finita) */
         const gpu=gpuRe.test(m)||(rec>=1&&/not loaded|ModelNotLoaded/i.test(m));
-        if(gpu&&size()==='leggero'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';throw x}
-        if(gpu&&size()==='medio'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';throw x}
+        if(gpu&&info().kind==='gpu'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';x.target=cpuTwin();throw x}
         if(lostRe.test(m)&&rec<2){/* motore in uno stato rotto (modello tolto dalla memoria, oggetti interni cancellati): lo ricreo da zero, i file restano sul dispositivo */
           rec++;emit('loading',{p:0,text:'Riavvio il regista'});e=await reset(true);emit('writing');if(rec===2)fi=fmts.length-1;continue}
         if(fi<fmts.length-1&&txt.length<=40){fi++;continue}
-        emit('ready');throw new Error((lostRe.test(m)?(size()==='leggero'?'anche il regista leggero non sta nella memoria della scheda grafica di questo dispositivo. Usa «Crea il cartone» qui, o il regista IA dal PC.':'il dispositivo ha tolto il regista IA dalla memoria e non sono riuscito a riavviarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.'):m)+' [dettagli: '+m.slice(0,140)+' · '+modelId+']')}}
+        emit('ready');throw new Error((lostRe.test(m)?(false?'':'il dispositivo ha tolto il regista IA dalla memoria e non sono riuscito a riavviarlo. Chiudi le altre app, tieni Cartoonia in primo piano e riprova.'):m)+' [dettagli: '+m.slice(0,140)+' · '+modelId+']')}}
     if(/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent||'')){/* sul telefono libero subito la memoria per voce e video */try{await e.unload()}catch(_){}engine=null;loading=null}
     emit('ready');let j;const t0=txt.slice(Math.max(0,txt.indexOf('{')));try{j=JSON.parse(t0)}catch(err){j=repair(t0)}if(!j)throw new Error('il regista IA non ha finito la sceneggiatura');return j}
   /* ===== nuovo flusso: l'IA scrive la STORIA (testo semplice, è quello che i modelli piccoli fanno bene),
@@ -3573,18 +3589,20 @@ Rosa ride e porta Tobia sulla sua schiena.
 Tobia dice: "Da quassù la luna è più vicina!"
 Tobia e Rosa guardano la luna insieme.`;
     return[{role:'system',content:sys},{role:'user',content:'Idea: un gatto vuole la torta del cuoco'},{role:'assistant',content:ex},{role:'user',content:'Idea: un pulcino vuole toccare la luna'},{role:'assistant',content:ex2},{role:'user',content:'Idea: '+idea.slice(0,800)}]}
-  async function genText(msgs,maxT,temp,onTok){let e=await load();emit('writing');let txt='';
+  /* adatta i messaggi al modello: Qwen 3 senza «ragionamento», Gemma senza ruolo di sistema */
+  function adapt(msgs){const M=info();msgs=msgs.map(m=>Object.assign({},m));if(M.think&&msgs[0].role==='system')msgs[0].content+='\n/no_think';if(M.nosys&&msgs[0].role==='system'){const sys=msgs.shift().content;if(msgs[0])msgs[0].content=sys+'\n\n'+msgs[0].content}return msgs}
+  async function genText(msgs,maxT,temp,onTok){let e=await load();msgs=adapt(msgs);emit('writing');let txt='';
     if(e.kind==='cpu'){const run=async()=>{txt='';await e.w.createChatCompletion({messages:msgs,max_tokens:maxT,temperature:temp,top_p:.9,top_k:40,stream:true,onData:d=>{const c=d&&d.choices&&d.choices[0]&&d.choices[0].delta&&d.choices[0].delta.content;if(c){txt+=c;onTok&&onTok(txt)}}})};
       try{await run()}catch(err){console.warn('processore',err);if(txt.length<40){try{await e.unload()}catch(_){}engine=null;loading=null;e=await load();await run()}}}
     else{let rec=0;
       for(;;){try{txt='';const it=await e.chat.completions.create({messages:msgs,temperature:temp,top_p:.9,max_tokens:maxT,stream:true});for await(const ch of it){const d=ch.choices&&ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content;if(d){txt+=d;onTok&&onTok(txt)}}break}
         catch(err){const m=String(err&&err.message||err);console.warn('regista IA',rec,err);const gpu=gpuRe.test(m)||(rec>=1&&/not loaded|ModelNotLoaded/i.test(m));
-          if(gpu){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';throw x}
+          if(gpu){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';x.target=cpuTwin();throw x}
           if(lostRe.test(m)&&rec<2){rec++;emit('loading',{p:0,text:'Riavvio il regista'});e=await reset(true);emit('writing');continue}
           emit('ready');throw new Error(m+' ['+modelId+']')}}}
     if(/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent||'')){try{await e.unload()}catch(_){}engine=null;loading=null}
     emit('ready');return txt}
-  function parseStory(t){t=String(t||'').replace(/\r/g,'').replace(/\*\*|__|#+ /g,'');const g=re=>{const m=t.match(re);return m?m[1].trim():''};
+  function parseStory(t){t=String(t||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\r/g,'').replace(/\*\*|__|#+ /g,'');const g=re=>{const m=t.match(re);return m?m[1].trim():''};
     const title=g(/TITOLO\s*:\s*(.+)/i).replace(/^["«“]|["»”]$/g,'');const st=g(/STILE\s*:\s*([a-zà-ù0-9' ]+)/i).toLowerCase();
     let body=t;const i=t.search(/STORIA\s*:/i);if(i>=0)body=t.slice(i).replace(/STORIA\s*:/i,'');else body=t.replace(/^(TITOLO|STILE)\s*:.*$/gim,'');
     body=body.split('\n').map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,'').trim()).filter(l=>l&&!/^(TITOLO|STILE|STORIA)\s*:/i.test(l)).join('\n').replace(/[“”«»]/g,'"').trim();
@@ -3625,9 +3643,11 @@ Tobia e Rosa guardano la luna insieme.`;
     const mor=clean(j.morale);if(mor)L.push('NARRATORE: '+mor);
     return{script:L.join('\n'),title,look:LOOK_LIST.some(l=>l.k===j.stile)?j.stile:'',music:j.musica}}
   function setPref(p){LS('cartoonia.aiModel',p==='auto'?null:p);if(engine){try{engine.unload()}catch(e){}}engine=null;loading=null}
-  function useLight(){LS('cartoonia.aiModel','leggero');engine=null;loading=null}
-  function useCPU(){LS('cartoonia.aiModel','cpu');engine=null;loading=null}
-  return{support,load,write,writeStory,parseStory,storyPrompt,toScript,cached,setPref,useLight,useCPU,gbnf,pref,size,MODELS,on:f=>listeners.add(f),get state(){return state},get model(){return modelId},get err(){return lastErr},schema,prompt}})();
+  function cpuTwin(){const k=size();const t=k.replace(/^gpu-/,'cpu-');return MODELS[t]?t:'cpu-qwen25-1.5'}
+  function useLight(){LS('cartoonia.aiModel','gpu-qwen25-0.5');engine=null;loading=null}
+  function useCPU(k){LS('cartoonia.aiModel',k||cpuTwin());engine=null;loading=null}
+  function setCustom(u){LS('cartoonia.aiCustomURL',u||null);engine=null;loading=null}
+  return{support,load,write,writeStory,parseStory,storyPrompt,toScript,cached,setPref,useLight,useCPU,setCustom,customURL,info,gbnf,pref,size,MODELS,on:f=>listeners.add(f),get state(){return state},get model(){return modelId},get err(){return lastErr},schema,prompt}})();
 
 let lookT=null;
 function renderLooks(){const g=$('#lookGal');if(!g)return;const cur=(App.proj&&App.proj.opts.look)||'';const v=App.fmt!=='wide';g.classList.toggle('wide',!v);
@@ -3638,10 +3658,17 @@ function renderLooks(){const g=$('#lookGal');if(!g)return;const cur=(App.proj&&A
 function lookThumbs(){const g=$('#lookGal');if(!g||!App.sc)return;const v=App.fmt!=='wide',w=v?72:128,h=v?128:72,t=Math.min(App.sc.dur-.1,App.sc.intro+1.2);
   g.querySelectorAll('button').forEach(b=>{const sw=b.querySelector('.sw');let c=sw.querySelector('canvas');if(!c){c=document.createElement('canvas');sw.appendChild(c)}c.width=w*2;c.height=h*2;
     try{drawFrame(c.getContext('2d'),App.sc,t,{w:c.width,h:c.height,mode:v?'vertical':'wide',bubbles:false,titles:false,vignette:true,look:b.dataset.k,env:k=>Voice.env(k)})}catch(e){console.warn(e)}})}
+function aiModelUI(){const sel=$('#setAiModel');if(!sel)return;const M=AIDirector.MODELS;let h='<option value="auto">Automatico · scheda grafica, processore se non regge</option>';
+  const grp=(kind,title)=>{h+='<optgroup label="'+title+'">';for(const k in M)if(M[k].kind===kind)h+='<option value="'+k+'">'+esc(M[k].label+' · '+M[k].size+' · '+M[k].note)+'</option>';h+='</optgroup>'};
+  grp('gpu','Scheda grafica (veloce · PC e telefoni potenti)');grp('cpu','Processore (più lento · funziona su tutti i telefoni)');h+='<optgroup label="Altro"><option value="custom">Personalizzato · incolla il link di un file .gguf</option></optgroup>';
+  sel.innerHTML=h;sel.value=AIDirector.pref();if(sel.selectedIndex<0)sel.value='auto';const cu=$('#aiCustomURL');cu.value=AIDirector.customURL();
+  const show=()=>{const v=sel.value;$('#aiCustomRow').hidden=v!=='custom';const I=AIDirector.info(v==='auto'?undefined:v);$('#aiModelInfo').textContent=v==='custom'&&!cu.value?'Incolla il link del modello qui sopra.':'Modello: '+I.label+(I.size?' · '+I.size+' da scaricare una volta':'')+' · '+(I.kind==='cpu'?'sul processore':'sulla scheda grafica')+(I.note?' · '+I.note:'')};
+  sel.onchange=()=>{AIDirector.setPref(sel.value);show();aiStatus();toast('Regista IA: '+sel.options[sel.selectedIndex].text.split(' ·')[0])};
+  cu.onchange=()=>{const u=cu.value.trim().replace('/blob/','/resolve/');cu.value=u;if(u&&!/^https:[/][/].+[.]gguf([?].*)?$/i.test(u)){toast('Serve il link diretto a un file .gguf');return}AIDirector.setCustom(u);show();aiStatus()};show()}
 async function aiStatus(){const e=$('#aiStat'),b=$('#aiLoadB');if(!e)return;const s=await AIDirector.support();if(!s.ok){e.className='warn';e.textContent='Regista IA: non disponibile qui';e.title=s.why;b.hidden=true;return}
   if(AIDirector.state==='ready')return;if(await AIDirector.cached()){e.className='ok';e.textContent='Regista IA: scaricato ✓, funziona anche offline';b.hidden=true}else{e.className='';e.textContent='Regista IA: da scaricare una volta';b.hidden=false}}
 async function aiAsk(){if(AIDirector.state==='ready')return true;const s=await AIDirector.support();if(!s.ok){await modal('Regista IA',`<p class="sub">${esc(s.why)}</p><p class="sub">Intanto puoi usare «Crea il cartone»: il regista integrato funziona ovunque.</p>`);return false}
-  if(await AIDirector.cached())return true;const sz=AIDirector.size(),M=AIDirector.MODELS[sz];return await confirmBox('La prima volta scarico il regista IA '+({leggero:'leggero',medio:'medio',cpu:'per il processore'}[sz])+' (Qwen 2.5 '+M[2]+', '+M[3]+'). Meglio col Wi-Fi. Poi resta sul dispositivo e funziona anche senza internet.','Scarica')}
+  if(await AIDirector.cached())return true;const M=AIDirector.info();return await confirmBox('La prima volta scarico il regista IA '+M.label+(M.size?' ('+M.size+')':'')+(M.kind==='cpu'?', che lavora sul processore':'')+'. Meglio col Wi-Fi. Poi resta sul dispositivo e funziona anche senza internet.','Scarica')}
 async function aiPrefetch(){if(!(await aiAsk()))return;try{busy(true,'Preparo il regista IA…',0);await AIDirector.load((p,t)=>busy(true,t+' · '+Math.round(p*100)+'%',p));busy(false);toast('Regista IA pronto ✓')}catch(e){busy(false);modal('Regista IA',`<p class="sub">Non sono riuscito a prepararlo: ${esc(e.message||e)}</p>`)}}
 async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toast('Scrivi prima un\'idea o una storia');$('#story').focus();return}
   if(!(await aiAsk()))return;stopPlay();const o=storyOpts(),t0=Date.now();let j,wl=null;try{wl=navigator.wakeLock&&await navigator.wakeLock.request('screen')}catch(e){}
@@ -3649,8 +3676,8 @@ async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toa
     busy(true,'Il regista IA scrive la storia… tieni Cartoonia aperta',.03);let k=0;
     j=await AIDirector.writeStory(idea,Object.assign({},o,{variant:!!variant}),txt=>{if(++k%4)return;const n=txt.split('\n').filter(x=>x.trim()).length;busy(true,'Il regista IA scrive la storia… '+Math.max(0,n-3)+' frasi',Math.min(.95,.05+txt.length/900))})}
   catch(e){try{wl&&wl.release()}catch(_){}busy(false);console.error(e);
-    if(e&&e.need==='cpu'){const ok=await confirmBox('La scheda grafica di questo telefono si è spenta mentre lavorava il regista IA. Faccio lavorare lo stesso regista da 1 GB (Qwen 2.5 1.5B) sul processore: non usa la scheda grafica, quindi è stabile, ma è più lento (alcuni minuti a sceneggiatura). Da scaricare una volta: circa 950 MB, meglio col Wi-Fi.','Usa il processore');if(ok){AIDirector.useCPU();$('#setAiModel').value='cpu';aiStatus();return aiMake(variant)}return}
-    if(e&&e.need==='leggero'){const ok=await confirmBox('La scheda grafica del telefono non ha abbastanza memoria per il regista medio e si è fermata. Passo al regista leggero (Qwen 2.5 0.5B, circa 400 MB da scaricare una volta): è più veloce, ma scrive storie più semplici. Sul PC puoi continuare a usare quello medio.','Usa il leggero');if(ok){AIDirector.useLight();$('#setAiModel').value='leggero';aiStatus();return aiMake(variant)}return}
+    if(e&&e.need==='cpu'){const T=AIDirector.info(e.target);const ok=await confirmBox('La scheda grafica di questo dispositivo si è spenta mentre lavorava il regista IA. Faccio lavorare '+T.label+' sul processore: non usa la scheda grafica, quindi è stabile, ma è più lento (alcuni minuti a storia). Da scaricare una volta: '+T.size+', meglio col Wi-Fi.','Usa il processore');if(ok){AIDirector.useCPU(e.target);aiModelUI();aiStatus();return aiMake(variant)}return}
+    if(e&&e.need==='leggero'){const ok=await confirmBox('La scheda grafica del telefono non ha abbastanza memoria per il regista medio e si è fermata. Passo al regista leggero (Qwen 2.5 0.5B, circa 400 MB da scaricare una volta): è più veloce, ma scrive storie più semplici. Sul PC puoi continuare a usare quello medio.','Usa il leggero');if(ok){AIDirector.useLight();aiModelUI();aiStatus();return aiMake(variant)}return}
     await modal('Regista IA',`<p class="sub">Non ci sono riuscito: ${esc(e.message||String(e))}</p><p class="sub">Puoi riprovare o usare «Crea il cartone».</p>`);return}
   try{wl&&wl.release()}catch(_){}
   const r=j,P=App.proj,userLook=P.opts.look||'';if(!userLook&&r.look)P.opts.look=r.look;
@@ -3758,8 +3785,8 @@ async function init(){
   helpTxt();aboutTxt();bindSettings();
   $$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.pane').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.p);$('#panels').scrollTop=0;if(b.dataset.p==='more'){renderProjects();autonomyInfo()}if(b.dataset.p==='script')syncScriptBox()});
   const goTab=p=>$(`#tabs button[data-p="${p}"]`).click();
-  $('#makeB').onclick=()=>makeFromStory(false);$('#remakeB').onclick=()=>App.proj&&App.proj.aiMade?aiMake(true):makeFromStory(true);$('#aiMakeB').onclick=()=>aiMake(false);$('#aiLoadB').onclick=()=>aiPrefetch();$('#aiDelB').onclick=aiDelete;$('#setAiModel').value=AIDirector.pref();$('#setAiModel').onchange=e=>{AIDirector.setPref(e.target.value);aiStatus();toast('Regista IA: '+e.target.options[e.target.selectedIndex].text.split(' ·')[0].split(' (')[0])};aiStatus();
-  AIDirector.on((s,i)=>{const e=$('#aiStat');if(s==='loading'&&!$('#busy').hidden)busy(true,(i&&i.text||'Preparo il regista')+' · '+Math.round((i&&i.p||0)*100)+'%',i&&i.p||0);if(s==='loading'){e.className='';e.textContent='Regista IA: '+(i&&i.text||'avvio')+' '+Math.round((i&&i.p||0)*100)+'%';$('#aiLoadB').hidden=true}else if(s==='ready'){e.className='ok';e.textContent='Regista IA: pronto ✓ ('+({leggero:'leggero',medio:'medio',cpu:'sul processore'}[AIDirector.size()])+')';$('#aiLoadB').hidden=true}else if(s==='writing'){e.className='';e.textContent='Regista IA: sto scrivendo…'}else if(s==='error'){e.className='warn';e.textContent='Regista IA: '+(i&&i.msg||'errore');$('#aiLoadB').hidden=false;$('#aiLoadB').textContent='Riprova'}});$('#toScriptB').onclick=()=>goTab('script');
+  $('#makeB').onclick=()=>makeFromStory(false);$('#remakeB').onclick=()=>App.proj&&App.proj.aiMade?aiMake(true):makeFromStory(true);$('#aiMakeB').onclick=()=>aiMake(false);$('#aiLoadB').onclick=()=>aiPrefetch();$('#aiDelB').onclick=aiDelete;aiModelUI();aiStatus();
+  AIDirector.on((s,i)=>{const e=$('#aiStat');if(s==='loading'&&!$('#busy').hidden)busy(true,(i&&i.text||'Preparo il regista')+' · '+Math.round((i&&i.p||0)*100)+'%',i&&i.p||0);if(s==='loading'){e.className='';e.textContent='Regista IA: '+(i&&i.text||'avvio')+' '+Math.round((i&&i.p||0)*100)+'%';$('#aiLoadB').hidden=true}else if(s==='ready'){e.className='ok';e.textContent='Regista IA: pronto ✓ ('+AIDirector.info().label+(AIDirector.info().kind==='cpu'?', processore':', scheda grafica')+')';$('#aiLoadB').hidden=true}else if(s==='writing'){e.className='';e.textContent='Regista IA: sto scrivendo…'}else if(s==='error'){e.className='warn';e.textContent='Regista IA: '+(i&&i.msg||'errore');$('#aiLoadB').hidden=false;$('#aiLoadB').textContent='Riprova'}});$('#toScriptB').onclick=()=>goTab('script');
   $('#qExportB').onclick=()=>goTab('export');$('#qPlayB').onclick=()=>{App.t=0;startPlay()};
   $('#playB').onclick=()=>App.playing?stopPlay():startPlay();$('#bigPlay').onclick=()=>startPlay();
   $('#scrub').oninput=e=>{App.t=+e.target.value;if(App.playing){Player.stop();startPlay()}App.dirty=true;drawPlayhead()};

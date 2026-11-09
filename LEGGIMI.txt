@@ -1,4 +1,4 @@
-CARTOONIA 2.21 — scrivi una storia, ottieni un cartone animato
+CARTOONIA 2.22 — scrivi una storia, ottieni un cartone animato
 ================================================================
 Tutto gira sul telefono o sul PC: niente internet, niente account, niente API,
 niente abbonamenti. Voce, disegni, musica, regia e video vengono generati in locale.
@@ -8,11 +8,22 @@ PRIMA COSA DOPO L'AGGIORNAMENTO (importante)
   2. Apri l'app: se vedi ancora la versione vecchia, chiudila del tutto e riaprila
      (oppure ricarica la pagina). Da questa versione in poi gli aggiornamenti
      arrivano subito, alla prima apertura con internet.
-  3. Controlla in alto, accanto al nome: deve esserci «v2.21».
+  3. Controlla in alto, accanto al nome: deve esserci «v2.22».
   4. Sotto «Crea il cartone» deve comparire «Voce: Paola, naturale femminile ✓».
      Premi «▶ Prova la voce» per sentirla subito.
   Se usi l'APK fatto con ApkForge, rifallo con questa cartella: l'APK contiene
   i file vecchi e non si aggiorna da solo.
+
+NOVITÀ DELLA 2.22 — SCEGLI IL MODELLO LOCALE
+  • Altro › Impostazioni › «Regista IA (modello locale)»: scegli tu il cervello del regista.
+    Sulla scheda grafica (veloce, PC): Qwen 2.5 0.5B / 1.5B / 3B, Qwen 3 1.7B / 4B,
+    Gemma 2 2B, Llama 3.2 3B, Phi 3.5 mini.
+    Sul processore (più lento, funziona su tutti i telefoni): Qwen 2.5 1.5B / 3B,
+    Qwen 3 1.7B, Gemma 2 2B, Llama 3.2 3B.
+    Personalizzato: incolli il link di un qualsiasi file .gguf (es. da Hugging Face).
+  • Sotto la scelta vedi quanto pesa il modello e dove lavora.
+  • Se la scheda grafica si spegne, Cartoonia propone lo stesso modello sul processore.
+  • Per l'italiano e i dialoghi i migliori sono Gemma 2 2B e Qwen 2.5 3B / Qwen 3 4B.
 
 NOVITÀ DELLA 2.21
   • Dialoghi più sensati: l'IA riceve due storie di esempio con un vero botta e risposta,
@@ -247,7 +258,9 @@ COME SI USA
 LICENZE
   eSpeak/meSpeak ed espeak-ng sono GPL-3.0: se distribuisci l'app, anche il suo
   codice deve restare disponibile con la stessa licenza (licenze/GPL-3.0.txt).
-  Regista IA: WebLLM (Apache 2.0), wllama/llama.cpp (MIT) e modelli Qwen2.5-1.5B/0.5B-Instruct (Apache 2.0).
+  Regista IA: WebLLM (Apache 2.0), wllama/llama.cpp (MIT). Modelli scaricati a parte, ognuno con la
+  sua licenza: Qwen 2.5 / Qwen 3 (Apache 2.0), Gemma 2 (Gemma Terms), Llama 3.2 (Llama 3.2 License),
+  Phi 3.5 (MIT).
   Stili del film ispirati a Lemo-Opuscar di LemoLab, MIT (licenze/lemo-opuscar-MIT.txt).
   onnxruntime-web, piper-phonemize, gifenc, mp4-muxer, webm-muxer e tiny-inflate sono MIT.
   Disegni aggiuntivi: OpenMoji (openmoji.org), CC BY-SA 4.0 (licenze/openmoji.txt).
