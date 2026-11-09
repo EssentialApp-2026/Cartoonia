@@ -1,4 +1,4 @@
-CARTOONIA 2.17 — scrivi una storia, ottieni un cartone animato
+CARTOONIA 2.18 — scrivi una storia, ottieni un cartone animato
 ================================================================
 Tutto gira sul telefono o sul PC: niente internet, niente account, niente API,
 niente abbonamenti. Voce, disegni, musica, regia e video vengono generati in locale.
@@ -8,11 +8,22 @@ PRIMA COSA DOPO L'AGGIORNAMENTO (importante)
   2. Apri l'app: se vedi ancora la versione vecchia, chiudila del tutto e riaprila
      (oppure ricarica la pagina). Da questa versione in poi gli aggiornamenti
      arrivano subito, alla prima apertura con internet.
-  3. Controlla in alto, accanto al nome: deve esserci «v2.17».
+  3. Controlla in alto, accanto al nome: deve esserci «v2.18».
   4. Sotto «Crea il cartone» deve comparire «Voce: Paola, naturale femminile ✓».
      Premi «▶ Prova la voce» per sentirla subito.
   Se usi l'APK fatto con ApkForge, rifallo con questa cartella: l'APK contiene
   i file vecchi e non si aggiorna da solo.
+
+NOVITÀ DELLA 2.18 — REGISTA IA SUL PROCESSORE
+  • Su alcuni telefoni la scheda grafica di Chrome si spegne anche col regista leggero
+    («mapAsync … Instance reference no longer exists»). Ora Cartoonia propone il regista
+    sul processore: llama.cpp in WebAssembly (wllama) con Qwen 2.5 0.5B (circa 350 MB).
+    Non usa la scheda grafica, quindi è stabile; è più lento (qualche minuto a sceneggiatura).
+    Anche lui è obbligato a scrivere solo personaggi, luoghi e azioni che Cartoonia sa disegnare.
+  • Altro › Impostazioni › «Regista IA» ha la nuova voce «Processore».
+  • Corretto: aggiornando l'app venivano cancellati anche i modelli già scaricati del regista IA.
+    Ora restano sul dispositivo tra una versione e l'altra.
+  • La pagina ora è «isolata» (dopo il primo riavvio), così il regista sul processore usa più core.
 
 NOVITÀ DELLA 2.17
   • Il passaggio al regista leggero ora scatta anche quando il telefono si limita a dire
@@ -189,7 +200,8 @@ NOVITÀ DELLA 2.2
     - nelle storie lunghe non aggiunge battute o morali: segue il tuo testo.
 
 FILE
-  ia/                   Il motore del regista IA (WebLLM). Il modello si scarica a parte.
+  ia/                   I motori del regista IA (WebLLM per la scheda grafica, wllama per il processore).
+                        I modelli si scaricano a parte.
   index.html            L'app completa in un solo file (circa 25 MB, voce compresa).
   manifest.webmanifest  ┐
   sw.js                 │ Servono per installarla come app (PWA) e usarla offline.
@@ -211,7 +223,7 @@ COME SI USA
 LICENZE
   eSpeak/meSpeak ed espeak-ng sono GPL-3.0: se distribuisci l'app, anche il suo
   codice deve restare disponibile con la stessa licenza (licenze/GPL-3.0.txt).
-  Regista IA: WebLLM (Apache 2.0) e modelli Qwen2.5-1.5B/0.5B-Instruct (Apache 2.0).
+  Regista IA: WebLLM (Apache 2.0), wllama/llama.cpp (MIT) e modelli Qwen2.5-1.5B/0.5B-Instruct (Apache 2.0).
   Stili del film ispirati a Lemo-Opuscar di LemoLab, MIT (licenze/lemo-opuscar-MIT.txt).
   onnxruntime-web, piper-phonemize, gifenc, mp4-muxer, webm-muxer e tiny-inflate sono MIT.
   Disegni aggiuntivi: OpenMoji (openmoji.org), CC BY-SA 4.0 (licenze/openmoji.txt).
