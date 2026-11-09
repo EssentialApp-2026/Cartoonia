@@ -317,7 +317,7 @@ setTimeout(function(){if(window.__appOK)return;var m=document.getElementById('no
       <label class="f">Volume musica</label><div class="slider"><input type="range" id="setVolM" min="0" max="1" step="0.02"><output id="setVolMo"></output></div>
       <div class="toggles"><label class="tg"><input type="checkbox" id="setSfx" checked><span>Effetti sonori</span></label><label class="tg"><input type="checkbox" id="setVig" checked><span>Vignettatura</span></label><label class="tg"><input type="checkbox" id="setHQ" checked><span>Anteprima alta qualità</span></label></div>
       <label class="f" for="setSign">Firma predefinita</label><input type="text" id="setSign" maxlength="40" placeholder="Es. EssentialApp">
-      <label class="f" for="setAiModel">Regista IA</label><select id="setAiModel"><option value="auto">Automatico (medio; leggero se il dispositivo non regge)</option><option value="medio">Medio · Qwen 1.5B, ≈1 GB (consigliato sul PC)</option><option value="leggero">Leggero · Qwen 0.5B, ≈400 MB (per telefoni)</option><option value="cpu">Processore · Qwen 0.5B, ≈350 MB (più lento, funziona su tutti i telefoni)</option></select>
+      <label class="f" for="setAiModel">Regista IA</label><select id="setAiModel"><option value="auto">Automatico (scheda grafica; processore se non regge)</option><option value="medio">Medio · Qwen 1.5B, ≈1 GB (consigliato sul PC)</option><option value="leggero">Leggero · Qwen 0.5B, ≈400 MB (per telefoni)</option><option value="cpu">Processore · Qwen 1.5B, ≈950 MB (più lento, senza scheda grafica)</option></select>
       <div class="row"><button class="btn" id="installB" hidden>Installa l'app</button><button class="btn ghost" id="aiDelB">Elimina il regista IA (libera ≈1 GB)</button></div>
      </div>
      <div class="card"><h3><svg class="i"><use href="#i-shield"/></svg>Autonomia</h3><div id="autoInfo"></div></div>
@@ -3233,7 +3233,7 @@ function cutoutImage(file,max){return new Promise((res,rej)=>{const url=URL.crea
 
 /* --- ui --- */
 /* ===== UI e controllo applicazione ===== */
-const VERSION='2.18';
+const VERSION='2.19';
 const VOICE_VARIANTS=[['','Standard'],['m1','Uomo 1'],['m2','Uomo 2'],['m3','Uomo 3'],['m4','Uomo profondo'],['m5','Uomo 5'],['m6','Ragazzo'],['m7','Uomo soffiato'],['f1','Donna 1'],['f2','Donna 2'],['f3','Donna 3'],['f4','Donna 4'],['f5','Bambina'],['croak','Rauca'],['klatt','Robotica 1'],['klatt2','Robotica 2'],['klatt3','Robotica 3'],['whisper','Sussurro'],['whisperf','Sussurro (donna)']];
 const SWATCH=['#e63946','#ff6fb5','#fb8500','#ffc300','#3bb273','#2ec4b6','#4cc9f0','#3a86ff','#8b5cf6','#8b5a2b','#8d99ae','#2b2d42','#f4f4f4'];
 const EXAMPLES=[
@@ -3426,7 +3426,7 @@ async function setBg(bi,spec){const lines=scriptLines(),b=sceneBlocks()[bi];if(b
 /* ===== Regista IA locale (stile Lemo-Opuscar): un modello linguistico nel browser scrive la sceneggiatura, Cartoonia la disegna ===== */
 const AIDirector=(()=>{
   const MODELS={medio:['Qwen2.5-1.5B-Instruct-q4f16_1-MLC','Qwen2.5-1.5B-Instruct-q4f32_1-MLC','1.5B','≈1 GB'],leggero:['Qwen2.5-0.5B-Instruct-q4f16_1-MLC','Qwen2.5-0.5B-Instruct-q4f32_1-MLC','0.5B','≈400 MB'],
-    cpu:['https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_0.gguf','','0.5B','≈350 MB']};
+    cpu:['https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_0.gguf','','1.5B','≈950 MB']};
   const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}return null};
   /* scelta: auto (medio, poi leggero se la scheda grafica del dispositivo non regge), medio, leggero */
   const pref=()=>LS('cartoonia.aiModel')||'auto';
@@ -3484,10 +3484,12 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
       engine=e;emit('ready');return e})();
     try{return await loading}catch(e){loading=null;lastErr=String(e&&e.message||e);emit('error',{msg:lastErr});throw e}}
   /* motore sul processore (llama.cpp in WebAssembly): più lento, ma non usa la scheda grafica */
-  async function loadCpu(onProg){modelId='Qwen2.5-0.5B-Instruct-Q4_0 (processore)';emit('loading',{p:0,text:'Avvio sul processore'});
+  async function loadCpu(onProg){modelId='Qwen2.5-1.5B-Instruct-Q4_0 (processore)';emit('loading',{p:0,text:'Avvio sul processore'});
     try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
     const mod=await import(new URL('ia/wllama/index.js',location.href).href),w=new mod.Wllama(wpaths(),{allowOffline:true,logger:{debug(){},log(){},warn:console.warn,error:console.error}});
     await w.loadModelFromUrl(MODELS.cpu[0],{n_ctx:4096,n_batch:256,n_gpu_layers:0,progressCallback:({loaded,total})=>{const p=total?loaded/total:0,t=(p>=.999?'Carico il regista':'Scarico il regista (processore)')+' · '+Math.round(loaded/1048576)+' MB';emit('loading',{p,text:t});onProg&&onProg(p,t)}});
+    /* via i file di modelli vecchi (es. 0.5B delle versioni precedenti) per liberare spazio */
+    try{for(const c of await w.cacheManager.list()){const u=(c.metadata&&c.metadata.originalURL)||c.name||'';if(!u.includes('Qwen2.5-1.5B-Instruct-Q4_0'))await w.cacheManager.delete(c.name)}}catch(_){}
     const e={kind:'cpu',w,unload:async()=>{try{await w.exit()}catch(_){}}};engine=e;emit('ready');return e}
   /* JSON schema -> grammatica GBNF di llama.cpp (solo le forme usate da schema()) */
   function gbnf(sc){const rules=[];let n=0;const lit=v=>JSON.stringify(JSON.stringify(v));const def=b=>{const k='r'+(n++);rules.push(k+' ::= '+b);return k};
@@ -3517,7 +3519,7 @@ Fai ${nSc} ${nSc>1?'scene':'scena'} con circa ${nB} momenti ciascuna.${o.dialect
         /* «model not loaded» subito dopo un riavvio = la scheda grafica si è spenta durante il caricamento (memoria finita) */
         const gpu=gpuRe.test(m)||(rec>=1&&/not loaded|ModelNotLoaded/i.test(m));
         if(gpu&&size()==='leggero'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';throw x}
-        if(gpu&&size()==='medio'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_LIGHT');x.need='leggero';throw x}
+        if(gpu&&size()==='medio'){emit('ready');try{engine&&engine.unload&&await engine.unload()}catch(_){}engine=null;loading=null;const x=new Error('NEED_CPU');x.need='cpu';throw x}
         if(lostRe.test(m)&&rec<2){/* motore in uno stato rotto (modello tolto dalla memoria, oggetti interni cancellati): lo ricreo da zero, i file restano sul dispositivo */
           rec++;emit('loading',{p:0,text:'Riavvio il regista'});e=await reset(true);emit('writing');if(rec===2)fi=fmts.length-1;continue}
         if(fi<fmts.length-1&&txt.length<=40){fi++;continue}
@@ -3573,7 +3575,7 @@ async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toa
     busy(true,'Il regista IA scrive la sceneggiatura… tieni Cartoonia aperta',.03);let k=0;
     j=await AIDirector.write(idea,Object.assign({},o,{variant:!!variant}),txt=>{if(++k%6)return;const sc=(txt.match(/"luogo"/g)||[]).length,az=(txt.match(/"chi"/g)||[]).length;busy(true,'Il regista IA scrive… scena '+Math.max(1,sc)+' · '+az+' momenti',Math.min(.95,.05+txt.length/3200))})}
   catch(e){try{wl&&wl.release()}catch(_){}busy(false);console.error(e);
-    if(e&&e.need==='cpu'){const ok=await confirmBox('Anche il regista leggero fa spegnere la scheda grafica di questo telefono. Lo faccio lavorare sul processore: non usa la scheda grafica, quindi è stabile, ma è più lento (qualche minuto a sceneggiatura). Da scaricare una volta: circa 350 MB.','Usa il processore');if(ok){AIDirector.useCPU();$('#setAiModel').value='cpu';aiStatus();return aiMake(variant)}return}
+    if(e&&e.need==='cpu'){const ok=await confirmBox('La scheda grafica di questo telefono si è spenta mentre lavorava il regista IA. Faccio lavorare lo stesso regista da 1 GB (Qwen 2.5 1.5B) sul processore: non usa la scheda grafica, quindi è stabile, ma è più lento (alcuni minuti a sceneggiatura). Da scaricare una volta: circa 950 MB, meglio col Wi-Fi.','Usa il processore');if(ok){AIDirector.useCPU();$('#setAiModel').value='cpu';aiStatus();return aiMake(variant)}return}
     if(e&&e.need==='leggero'){const ok=await confirmBox('La scheda grafica del telefono non ha abbastanza memoria per il regista medio e si è fermata. Passo al regista leggero (Qwen 2.5 0.5B, circa 400 MB da scaricare una volta): è più veloce, ma scrive storie più semplici. Sul PC puoi continuare a usare quello medio.','Usa il leggero');if(ok){AIDirector.useLight();$('#setAiModel').value='leggero';aiStatus();return aiMake(variant)}return}
     await modal('Regista IA',`<p class="sub">Non ci sono riuscito: ${esc(e.message||String(e))}</p><p class="sub">Puoi riprovare o usare «Crea il cartone».</p>`);return}
   try{wl&&wl.release()}catch(_){}
@@ -3582,7 +3584,7 @@ async function aiMake(variant){const idea=$('#story').value.trim();if(!idea){toa
   P.story=idea;P.aiMade=true;busy(false);const log=$('#makeLog'),add=(t,c)=>{const d=document.createElement('div');d.className=c||'';d.textContent=t;log.insertBefore(d,log.firstChild)};
   const L=LOOK_LIST.find(x=>x.k===(P.opts.look||''))||LOOK_LIST[0];add('🎨 Stile: '+L.n+(userLook?' (scelto da te)':' (scelto dal regista IA)'));add('🤖 Regista IA: sceneggiatura scritta sul dispositivo in '+Math.round((Date.now()-t0)/1000)+' s','ok');
   renderLooks();scheduleSave()}
-async function aiDelete(){if(!(await confirmBox('Elimino il regista IA da questo dispositivo? Potrai riscaricarlo quando vuoi.','Elimina')))return;try{for(const k of await caches.keys())if(/webllm/i.test(k))await caches.delete(k);if(window.indexedDB&&indexedDB.databases){for(const d of await indexedDB.databases())if(d.name&&/webllm/i.test(d.name))indexedDB.deleteDatabase(d.name)}}catch(e){}toast('Regista IA eliminato');location.reload()}
+async function aiDelete(){if(!(await confirmBox('Elimino il regista IA da questo dispositivo? Potrai riscaricarlo quando vuoi.','Elimina')))return;try{for(const k of await caches.keys())if(/webllm/i.test(k))await caches.delete(k);try{const r=await navigator.storage.getDirectory();await r.removeEntry('cache',{recursive:true})}catch(_){}if(window.indexedDB&&indexedDB.databases){for(const d of await indexedDB.databases())if(d.name&&/webllm/i.test(d.name))indexedDB.deleteDatabase(d.name)}}catch(e){}toast('Regista IA eliminato');location.reload()}
 function renderStyle(){renderLooks();const P=App.proj,sc=App.sc;$('#scTitle').value=sc?sc.title||'':P.name;$('#scSign').value=sc?sc.sign||'':'';$('#scMusic').value=sc?sc.music||'nessuna':'allegra';$('#scBubbles').checked=P.opts.bubbles!==false;$('#scSubs').checked=!!P.opts.subs;$('#scCam').checked=P.opts.autoCam!==false;$('#camB').classList.toggle('on',P.opts.autoCam!==false)}
 function setHeader(kw,val){const lines=scriptLines();const re=new RegExp('^'+kw+'\\b','i');const i=lines.findIndex(l=>re.test(l.trim()));if(val==null||val===''){if(i>=0)lines.splice(i,1)}else if(i>=0)lines[i]=kw+' '+val;else{const j=lines.findIndex(l=>/^(TITOLO|MUSICA)\b/i.test(l.trim()));lines.splice(j>=0?j+1:0,0,kw+' '+val)}return lines}
 async function addActorDlg(){stopPlay();const html=`<label class="f">Nome</label><input type="text" id="aName" placeholder="Es. Gennarino"><label class="f">Scegli</label><div class="gal" id="spGal"></div>`;
