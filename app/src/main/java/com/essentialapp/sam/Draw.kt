@@ -28,7 +28,12 @@ class ClipTokenizer(vocabGz: InputStream) {
         var n = 0
         for (b in 0..255) if (b !in bs) { bs.add(b); cs.add(256 + n); n++ }
         byteEncoder = bs.indices.associate { bs[it] to cs[it].toChar() }
-        val lines = GZIPInputStream(vocabGz).bufferedReader(Charsets.UTF_8).readLines()
+        // 2.1: la build Gradle scompatta da sola gli assets .gz (e toglie l'estensione): si accettano tutti e due
+        val buffered = java.io.BufferedInputStream(vocabGz)
+        buffered.mark(2)
+        val gz = buffered.read() == 0x1f && buffered.read() == 0x8b
+        buffered.reset()
+        val lines = (if (gz) GZIPInputStream(buffered) else buffered).bufferedReader(Charsets.UTF_8).readLines()
         val merges = lines.subList(1, 49152 - 256 - 2 + 1).map { val p = it.split(' '); p[0] to p[1] }
         ranks = merges.withIndex().associate { it.value to it.index }
         val vocab = ArrayList<String>()

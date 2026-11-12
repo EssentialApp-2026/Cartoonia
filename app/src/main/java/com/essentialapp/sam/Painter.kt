@@ -123,7 +123,8 @@ object Painter {
     /** Carica i modelli (la prima volta qualche secondo). Thread di background. */
     fun load(ctx: Context, lib: String, threads: Int): StableDiffusion = synchronized(this) {
         sd?.let { return it }
-        if (tok == null) tok = ctx.assets.open("clip/bpe_simple_vocab_16e6.txt.gz").use { ClipTokenizer(it) }
+        if (tok == null) tok = (try { ctx.assets.open("clip/bpe_simple_vocab_16e6.txt.gz") }
+            catch (e: java.io.FileNotFoundException) { ctx.assets.open("clip/bpe_simple_vocab_16e6.txt") }).use { ClipTokenizer(it) }
         val d = dir(ctx)
         val s = StableDiffusion(lib, File(d, FILES[0].first).absolutePath, File(d, FILES[1].first).absolutePath, File(d, FILES[2].first).absolutePath, threads)
         sd = s

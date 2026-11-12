@@ -49,6 +49,8 @@ android {
     packaging {
         // librerie native estratte all'installazione (come nella build manuale)
         jniLibs { useLegacyPackaging = true }
+        // le librerie di JNA per gli altri sistemi (Windows, Mac…) non servono sul telefono
+        resources.excludes += listOf("com/sun/jna/*/**", "kotlin-tooling-metadata.json")
     }
 }
 
