@@ -1,4 +1,4 @@
-# SAM 2.1 (telefono) e SAM per PC 2.0.3
+# SAM 2.1.1 (telefono) e SAM per PC 2.0.3
 
 SAM vive sul tuo Redmi Note 14 Pro: il riconoscimento della voce, i comandi, l'intelligenza artificiale e le
 risposte girano tutti sul processore del telefono. **Internet lo usa solo in due casi**: col Wi-Fi, per scaricare
@@ -17,7 +17,7 @@ chiave, nessuna API a pagamento.
 | Aggiornamenti: la Wikipedia nuova e il cervello nuovo | scaricati da internet, **solo col Wi-Fi** | solo per scaricarli |
 | Ricerca sul web e ricerca approfondita (1.16) | cerca su DuckDuckGo/Wikipedia, il riassunto lo fa il cervello sul telefono | **solo quando lo chiedi** |
 
-## Telefono 2.1 — cervelli online con più account che si danno il cambio
+## Telefono 2.1.1 — cervelli online con più account che si danno il cambio
 
 Oltre al cervello del telefono SAM può usare i **cervelli online** con i tuoi account: Groq, Google Gemini, OpenRouter,
 Mistral, Cerebras, OpenAI, Anthropic Claude, DeepSeek o un altro servizio compatibile con OpenAI.
@@ -26,6 +26,13 @@ Mistral, Cerebras, OpenAI, Anthropic Claude, DeepSeek o un altro servizio compat
 2. Scegli il servizio e incolla la chiave API (il link sotto la chiave apre la pagina dove prenderla). Il modello si
    può scegliere dall'elenco del servizio con **Scegli il modello dall'elenco**; **Prova** controlla che funzioni.
 3. Metti gli account nell'ordine che preferisci con ↑ ↓.
+
+**Accedere con il tuo account (2.1.1).** In cima alla pagina c'è **Accedi ai tuoi account**:
+- **Accedi con OpenRouter**: si apre il browser, entri con il tuo account (Google, GitHub o email) e confermi; SAM riceve
+  la chiave da solo e sceglie un modello gratuito. Nessuna chiave da copiare.
+- **Groq, Google Gemini, Cerebras, Mistral, OpenAI, Anthropic Claude, DeepSeek**: SAM apre la pagina delle chiavi del
+  servizio; entri con il tuo account, crei una chiave e la **copi**. Torni su SAM: la trova negli appunti, chiede se
+  aggiungerla, la prova e poi la toglie dagli appunti.
 
 Come funziona: SAM prova gli account dall'alto verso il basso. Quando uno finisce i token, supera il limite al minuto,
 ha la chiave sbagliata o il servizio non risponde, lo mette **in pausa per il tempo giusto** (pochi secondi per i limiti

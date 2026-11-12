@@ -38,6 +38,8 @@ class OnlineActivity : Activity() {
     private val dp by lazy { resources.displayMetrics.density }
     private val main = Handler(Looper.getMainLooper())
     private lateinit var content: LinearLayout
+    /** servizio di cui hai aperto la pagina delle chiavi: al ritorno su SAM si guarda negli appunti */
+    private var pendingProvider: Provider? = null
 
     private val BG = Color.rgb(14, 17, 24)
     private val CARD_BG = Color.rgb(24, 28, 40)
@@ -119,6 +121,23 @@ class OnlineActivity : Activity() {
             })
         }
         modeCard.addView(group)
+
+        // --- accesso -------------------------------------------------------------------
+        val loginCard = card("Accedi ai tuoi account")
+        loginCard.addView(text(
+            "OpenRouter: login vero. Si apre il browser, entri con il tuo account (Google, GitHub o email) e SAM riceve la " +
+                "chiave da solo, con un modello gratuito già scelto."
+        ))
+        loginCard.addView(row(btn("Accedi con OpenRouter", primary = true) { loginOpenRouter() }))
+        loginCard.addView(text(
+            "Gli altri servizi non hanno un login per le app: SAM apre la loro pagina, tu entri con il tuo account, crei la " +
+                "chiave e la copi. Torna su SAM: la trova da sola negli appunti e la aggiunge."
+        ))
+        val quick = listOf(Provider.GROQ, Provider.GEMINI, Provider.CEREBRAS, Provider.MISTRAL,
+            Provider.OPENAI, Provider.ANTHROPIC, Provider.DEEPSEEK)
+        quick.chunked(2).forEach { pair ->
+            loginCard.addView(row(*pair.map { pr -> btn(pr.label) { openKeyPage(pr) } }.toTypedArray()))
+        }
 
         // --- account ------------------------------------------------------------------
         val accCard = card("Account online, in ordine di uso")
@@ -291,4 +310,70 @@ class OnlineActivity : Activity() {
     }
 
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
+
+    // --- accesso -------------------------------------------------------------------------
+
+    private fun loginOpenRouter() {
+        toast("Si apre il browser: entra con il tuo account OpenRouter e conferma.")
+        OpenRouterLogin.start(this) { result, error ->
+            if (result == null) {
+                if (!isFinishing && !isDestroyed) toast("OpenRouter: ${error ?: "accesso annullato"}")
+                return@start
+            }
+            val existing = AccountStore.accounts.firstOrNull { it.provider == Provider.OPENROUTER && it.apiKey == result.key }
+            val acc = existing ?: Account(name = "OpenRouter", provider = Provider.OPENROUTER, apiKey = result.key,
+                model = result.model, baseUrl = "")
+            AccountStore.upsert(acc)                       // salvato anche se la schermata nel frattempo è stata chiusa
+            if (isFinishing || isDestroyed) return@start
+            rebuild()
+            AlertDialog.Builder(this).setTitle("OpenRouter collegato ✓")
+                .setMessage("Modello scelto: ${acc.model}\n\nPuoi cambiarlo con Modifica › Scegli il modello dall'elenco " +
+                    "(quelli che finiscono con «:free» sono gratuiti).")
+                .setPositiveButton("Prova adesso") { _, _ -> test(acc) }
+                .setNegativeButton("Ok", null).show()
+        }
+    }
+
+    private fun openKeyPage(p: Provider) {
+        if (p.keyUrl.isBlank()) return
+        pendingProvider = p
+        toast("Entra con il tuo account, crea una chiave API e copiala: poi torna su SAM.")
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(p.keyUrl))) }
+        catch (e: Exception) { pendingProvider = null; toast("Non trovo un browser") }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Android legge gli appunti solo quando l'app ha il focus: per questo qui e non in onResume
+        val p = pendingProvider ?: return
+        if (!hasFocus) return
+        main.postDelayed({ checkClipboard(p) }, 300)
+    }
+
+    private fun checkClipboard(p: Provider) {
+        if (pendingProvider != p || isFinishing) return
+        val cm = getSystemService(android.content.ClipboardManager::class.java) ?: return
+        val clip = try { cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString() } catch (e: Exception) { null }
+        val key = KeySniffer.match(p, clip) ?: return
+        if (AccountStore.accounts.any { it.apiKey == key }) { pendingProvider = null; toast("Questa chiave c'è già."); return }
+        pendingProvider = null
+        AlertDialog.Builder(this).setTitle("Chiave di ${p.label} trovata")
+            .setMessage("Negli appunti c'è una chiave di ${p.label} (${key.take(8)}…). La aggiungo e la provo?")
+            .setPositiveButton("Sì") { _, _ ->
+                val n = AccountStore.accounts.count { it.provider == p }
+                val acc = Account(name = if (n == 0) p.label else "${p.label} ${n + 1}", provider = p, apiKey = key,
+                    model = p.defaultModel, baseUrl = "")
+                AccountStore.upsert(acc)
+                // per sicurezza la chiave non resta negli appunti
+                try { if (android.os.Build.VERSION.SDK_INT >= 28) cm.clearPrimaryClip() } catch (e: Exception) {}
+                rebuild()
+                test(acc)
+            }
+            .setNegativeButton("No", null).show()
+    }
+
+    override fun onDestroy() {
+        if (isFinishing) OpenRouterLogin.cancel()
+        super.onDestroy()
+    }
 }

@@ -75,6 +75,7 @@ object CareCommands {
 object About {
     const val PC_VERSION = "2.0.3"
     val NEWS = listOf(
+        "Ai cervelli online puoi accedere con il tuo account: con OpenRouter basta il login, per Groq, Gemini e gli altri apro la pagina della chiave e la prendo io dagli appunti",
         "Posso usare anche i cervelli online con i tuoi account, come Groq e Gemini: quando uno finisce i token passo da solo al successivo, e se finiscono tutti rispondo col cervello del telefono. Si impostano in Configurazione, alla voce Cervelli online",
         "I file che scrivo adesso sono completi: se non è finito continuo da solo finché arriva in fondo",
         "Programmi e documenti li salvo in HTML, in un file unico che si apre nel browser",

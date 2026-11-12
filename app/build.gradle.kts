@@ -17,8 +17,8 @@ android {
         applicationId = "com.essentialapp.sam"
         minSdk = 31
         targetSdk = 35
-        versionCode = 43
-        versionName = "2.1.0"
+        versionCode = 44
+        versionName = "2.1.1"
         ndk { abiFilters += "arm64-v8a" }
     }
 
