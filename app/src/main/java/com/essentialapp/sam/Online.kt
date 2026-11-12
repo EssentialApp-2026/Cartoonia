@@ -469,11 +469,6 @@ object OnlineBrain {
     }
 
 
-    fun isOnline(context: Context): Boolean {
-        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
 
     enum class Outcome { ANSWERED, CANCELLED, NONE }
 
