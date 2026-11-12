@@ -1,0 +1,44 @@
+name: Compila SAM (non firmato)
+
+on:
+  push:
+    branches: [ sam-build ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: SDK Android (già presente sul runner)
+        run: |
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin | sort -V | tail -1)/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-35" "build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compila
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/SAM-unsigned.apk
+
+      - name: Pubblica l'APK non firmato (si firma sul PC)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: sam-unsigned-${{ github.run_number }}
+          name: SAM non firmato ${{ github.run_number }} (non installabile)
+          prerelease: true
+          files: out/SAM-unsigned.apk

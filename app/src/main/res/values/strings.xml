@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SAM</string>
+    <string name="accessibility_desc">Permette a SAM di eseguire i comandi vocali anche quando lavora in sottofondo: aprire le app, le chiamate e il browser, tornare indietro, andare alla home, chiudere le app, bloccare lo schermo, premere "invia" su WhatsApp quando gli chiedi di mandare un messaggio e leggerti il meteo dallo schermo dell\'app del meteo quando glielo chiedi. SAM non registra e non invia nulla da nessuna parte: non ha accesso a internet.</string>
+</resources>
