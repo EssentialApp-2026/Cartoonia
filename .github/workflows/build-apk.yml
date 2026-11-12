@@ -37,22 +37,26 @@ jobs:
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Compila APK
+      - name: Verifica codice Kotlin (veloce)
         run: |
           chmod +x ./gradlew
+          ./gradlew compileReleaseKotlin --no-daemon
+
+      - name: Compila APK
+        run: |
           ./gradlew assembleRelease --no-daemon --stacktrace
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk out/LocaleAI.apk
+          cp app/build/outputs/apk/release/app-release.apk out/SAM.apk
 
       - name: Allega APK alla build
         uses: actions/upload-artifact@v4
         with:
-          name: LocaleAI-apk
-          path: out/LocaleAI.apk
+          name: SAM-apk
+          path: out/SAM.apk
 
       - name: Pubblica release scaricabile dal telefono
         uses: softprops/action-gh-release@v2
         with:
           tag_name: localeai-build-${{ github.run_number }}
-          name: Locale AI (APK) build ${{ github.run_number }}
-          files: out/LocaleAI.apk
+          name: SAM (APK) build ${{ github.run_number }}
+          files: out/SAM.apk
